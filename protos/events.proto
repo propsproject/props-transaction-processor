@@ -1,0 +1,48 @@
+syntax = "proto3";
+package pending_props_pb;
+import "earning.proto";
+import "balance.proto";
+import "users.proto";
+
+enum EventType {
+    EarningIssued = 0;
+    EarningRevoked = 1;
+    EarningSettled = 2;
+    BalanceUpdated = 3;
+    LastEthBlockUpdated = 4;
+    WalletLinked = 5;
+    WalletUnlinked = 6;
+}
+
+message EarningEvent {
+    Earning earning = 1;
+    string issueAddress = 2;
+    string revokeAddress = 3;
+    string settleAddress = 4;
+    string message = 5;
+    string description = 6;
+}
+
+message BalanceEvent {
+    Balance balance = 1;
+    string message = 2;
+    string description = 3;
+}
+
+message LastEthBlockEvent {
+    int64 blockId = 1;
+    string message = 2;
+    int64 timestamp = 3;
+}
+
+message WalletLinkedEvent {
+    ApplicationUser user = 1;
+    WalletToUser walletToUsers = 2;
+    string message = 3;
+}
+
+message WalletUnlinkedEvent {
+    ApplicationUser user = 1;
+    WalletToUser walletToUsers = 2;
+    string message = 3;
+}

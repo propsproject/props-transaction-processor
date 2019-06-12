@@ -1,0 +1,8 @@
+Creating network "scripts_default" with the default driver
+Creating sawtooth-validator-default ... 
+[1A[2KCreating sawtooth-validator-default ... [32mdone[0m[1BCreating sawtooth-settings-tp-default ... 
+Creating sawtooth-intkey-tp-python-default ... 
+Creating sawtooth-xo-tp-python-default     ... 
+Creating sawtooth-rest-api-default         ... 
+[4A[2KCreating sawtooth-settings-tp-default      ... [32mdone[0m[4B[2A[2KCreating sawtooth-xo-tp-python-default     ... [32mdone[0m[2B[3A[2KCreating sawtooth-intkey-tp-python-default ... [32mdone[0m[3B[1A[2KCreating sawtooth-rest-api-default         ... [32mdone[0m[1BCreating sawtooth-shell-default            ... 
+[1A[2KCreating sawtooth-shell-default            ... [32mdone[0m[1B

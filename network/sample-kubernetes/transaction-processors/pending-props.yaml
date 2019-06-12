@@ -1,0 +1,25 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: pending-props-tp
+  labels:
+    app: pending-props-tp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pending-props-tp
+  template:
+    metadata:
+      labels:
+        app: pending-props-tp
+    spec:
+      containers:
+        - name: pending-props
+          image: 774122189772.dkr.ecr.us-east-1.amazonaws.com/payouts-playground-props
+          imagePullPolicy: Always
+          command:
+            - sh
+          args:
+            - -c
+            - "./build/bin/pending-props-tp --validator=tcp://propschain-genesis-node:4004 --ethereum=https://rinkeby.infura.io/YZacpQ8C0BupYA52TSb0 --token=0x2515cdd51b1d8782cf9301bffa2c8decdc6263fa"

@@ -1,0 +1,89 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: propschain-genesis-node
+  labels:
+    app: propschain-genesis-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: propschain-genesis-node
+  template:
+    metadata:
+      labels:
+        app: propschain-genesis-node
+    spec:
+      containers:
+        - name: sawtooth-poet-validator-registry-tp
+          image: hyperledger/sawtooth-poet-validator-registry-tp:1.0
+          command:
+            - bash
+          args:
+            - -c
+            - "poet-validator-registry-tp -vv -C tcp://$PROPSCHAIN_GENESIS_NODE_SERVICE_HOST:4004"
+
+        - name: sawtooth-rest-api
+          image: hyperledger/sawtooth-rest-api:1.0
+          ports:
+            - name: api
+              containerPort: 8008
+              hostPort: 8008
+          command:
+            - bash
+          envFrom:
+          - configMapRef:
+              name: propschain-genesis-node
+          args:
+            - -c
+            - "echo ${OPENTSDB_USERNAME} >> /etc/sawtooth/rest_api.toml && \
+               echo ${OPENTSDB_PW} >> /etc/sawtooth/rest_api.toml && \
+               sawtooth-rest-api -C tcp://$PROPSCHAIN_GENESIS_NODE_SERVICE_HOST:4004 \
+               --opentsdb-url http://propschain-metrics:8086 \
+               --opentsdb-db metrics \
+               --bind 0.0.0.0:8008"
+
+        - name: sawtooth-settings-tp
+          image: hyperledger/sawtooth-settings-tp:1.0
+          command:
+            - bash
+          args:
+            - -c
+            - "settings-tp -vv -C tcp://$PROPSCHAIN_GENESIS_NODE_SERVICE_HOST:4004"
+
+        - name: sawtooth-shell
+          image: hyperledger/sawtooth-shell:1.0
+          command:
+            - bash
+          args:
+            - -c
+            - "sawtooth keygen && tail -f /dev/null"
+
+        - name: sawtooth-validator
+          image: hyperledger/sawtooth-validator:1.0
+          ports:
+            - name: tp
+              containerPort: 4004
+              hostPort: 4004
+
+            - name: consensus
+              containerPort: 5050
+              hostPort: 5050
+
+            - name: validators
+              containerPort: 8800
+              hostPort: 8800
+          command:
+            - bash
+          args:
+            - -c
+            - "curl -s ${START_UP_SCRIPT} | bash"
+          envFrom:
+          - configMapRef:
+              name: propschain-genesis-node
+          volumeMounts:
+              - name: propschain-genesis-node
+                mountPath: /poet
+      volumes:
+        - name: propschain-genesis-node
+          emptyDir: {}

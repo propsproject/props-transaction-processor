@@ -1,0 +1,14 @@
+syntax = "proto3";
+package pending_props_pb;
+
+message ApplicationUser {
+    string application_id = 1;
+    string user_id = 2;
+    string signature = 3;
+    int64 timestamp = 4;
+}
+
+message WalletToUser {
+    string address = 1;
+    repeated ApplicationUser users = 2;
+}

@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+data:
+  INFLUXDB_ADMIN_ENABLED: "true"
+  INFLUXDB_HTTP_AUTH_ENABLED: "true"
+  INFLUXDB_ADMIN_PASSWORD: "admin"
+  INFLUXDB_ADMIN_USER: "admin"
+  INFLUXDB_DATA_DIR: "/influxdb/data"
+  INFLUXDB_DATA_WAL_DIR: "/influxdb/wal"
+  INFLUXDB_DB: "metrics"
+  INFLUXDB_META_DIR: "/influxdb/meta"
+  INFLUXDB_USER: "lrdata"
+  INFLUXDB_USER_PASSWORD: "lrdatapw"
+kind: ConfigMap
+metadata:
+  name: metrics-config

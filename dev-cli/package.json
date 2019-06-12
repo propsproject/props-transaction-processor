@@ -1,0 +1,76 @@
+{
+  "name": "ui",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "ISC",
+  "scripts": {
+    "genesis": "node ./genesis.js",
+    "test": "NODE_ENV=test mocha --timeout 180000 $NODE_DEBUG_OPTION test/test.js --exit || :",
+    "pretest": "rm -f /tmp/out.log && cd scripts && sh ./local-sawtooth.sh && cd ../../ && cd dev-cli",
+    "posttest": "kill $(ps aux | egrep '[g]o run cmd/main.go -c -f ./configs/development.json|[d]ocker-compose -f ./sawtooth-default.yaml up|[/]var.*configs/development' | awk '{print $2}') && cd scripts && sh ./destroy-local-sawtooth.sh && cd ../"
+  },
+  "dependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/node": "^10.12.2",
+    "add": "^2.0.6",
+    "async-wait-until": "^1.2.4",
+    "axios": "^0.18.0",
+    "bignumber": "^1.1.0",
+    "bignumber.js": "^7.0.1",
+    "caporal": "^0.10.0",
+    "cbor": "^4.0.0",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-string": "^1.4.0",
+    "command-line-args": "^5.0.2",
+    "eth-crypto": "^1.2.4",
+    "ethereumjs-util": "^6.0.0",
+    "ethereumjs-wallet": "^0.6.3",
+    "figlet": "^1.2.1",
+    "find-in-files": "^0.5.0",
+    "google-closure-library": "^20180405.0.0",
+    "google-protobuf": "^3.5.0",
+    "moment": "^2.22.2",
+    "opn": "^5.4.0",
+    "prettyjson": "^1.2.1",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2",
+    "sawtooth-sdk": "^1.0.2",
+    "web3": "1.0.0-beta.35",
+    "yarn": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.109",
+    "@types/mocha": "^5.2.0",
+    "@types/moment-timezone": "^0.5.5",
+    "commitizen": "^2.8.6",
+    "copyfiles": "^2.0.0",
+    "cz-conventional-changelog": "^1.2.0",
+    "mocha": "^5.2.0",
+    "mocha-multi": "^1.0.1",
+    "mocha-osx-reporter": "^0.1.2",
+    "nodejs-dashboard": "latest",
+    "nyc": "^10.0.0",
+    "sinon": "^7.1.0",
+    "tslint": "^4.5.1",
+    "tslint-config-airbnb": "^1.1.1"
+  },
+  "czConfig": {
+    "path": "node_modules/cz-conventional-changelog"
+  },
+  "nyc": {
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true
+  },
+  "author": "Jonathan Achai"
+}

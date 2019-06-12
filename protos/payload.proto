@@ -1,0 +1,33 @@
+syntax = "proto3";
+package pending_props_pb;
+
+import "google/protobuf/any.proto";
+
+enum Method {
+    ISSUE = 0;
+    REVOKE = 1;
+    SETTLE = 2;
+    BALANCE_UPDATE = 3;
+    LAST_ETH_BLOCK_UPDATE = 4;
+    WALLET_LINK = 5;
+    ACTIVITY_LOG = 6;
+}
+
+message Params {
+    google.protobuf.Any data = 1;
+}
+
+//@Todo add nonce
+message RPCRequest {
+    Method method = 1;
+    Params params = 2;
+}
+
+/* Data to be submitted to TP */
+message BalanceUpdate {
+    string public_address = 1;
+    string onchain_balance = 2; // big.Int
+    string tx_hash = 5;
+    int64 block_id = 6;
+    int64 timestamp = 7;
+}

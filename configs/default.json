@@ -1,0 +1,12 @@
+{
+  "environment": "default",
+  "app": "sidechain",
+  "name": "pendings-props-tp",
+  "verbose": "debug",
+  "validator_url": "",
+  "ethereum_url": "",
+  "worker-queue": 100,
+  "threads": 0,
+  "props_token_contract_address": "",
+  "confirmation-blocks": 15
+}

@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+data:
+  OPENTSDB_PW: "opentsdb_password = \"lrdata\""
+  OPENTSDB_USERNAME: "opentsdb_username = \"lrdatapw\""
+  START_UP_SCRIPT: "https://raw.githubusercontent.com/propsproject/pending-props/master/network/sample-kubernetes/startup-scripts/genesis-node/validator.sh?token=ALA7cG2dFO9C0DvLOgLMm6fztNNiP3eFks5cC41HwA%3D%3D"
+kind: ConfigMap
+metadata:
+  name: propschain-events

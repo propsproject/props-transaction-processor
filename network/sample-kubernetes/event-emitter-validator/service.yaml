@@ -1,0 +1,77 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: propschain-events
+  labels:
+    app: propschain-events
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: propschain-events
+  template:
+    metadata:
+      labels:
+        app: propschain-events
+    spec:
+      containers:
+        - name: sawtooth-validator
+          image: hyperledger/sawtooth-validator:1.0
+          ports:
+            - name: tp
+              containerPort: 4004
+              hostPort: 4004
+
+            - name: consensus
+              containerPort: 5050
+              hostPort: 5050
+
+            - name: validators
+              containerPort: 8800
+              hostPort: 8800
+          command:
+            - bash
+          args:
+            - -c
+            - "if [ ! -e /etc/sawtooth/keys/validator.priv ]; then \
+                 sawadm keygen; \
+               fi && \
+               if [ ! -e /root/.sawtooth/keys/my_key.priv ]; then \
+                 sawtooth keygen my_key; \
+               fi && \
+               sawtooth-validator -vv \
+                 --endpoint tcp://$PROPSCHAIN_EVENTS_SERVICE_HOST:8800 \
+                 --bind component:tcp://eth0:4004 \
+                 --bind consensus:tcp://eth0:5050 \
+                 --bind network:tcp://eth0:8800 \
+                 --peers tcp://$PROPSCHAIN_GENESIS_NODE_SERVICE_HOST:8800"
+          envFrom:
+          - configMapRef:
+              name: propschain-events
+          volumeMounts:
+              - name: propschain-events
+                mountPath: /poet
+
+      volumes:
+        - name: propschain-events
+          emptyDir: {}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: propschain-events
+  annotations:
+    dns.alpha.kubernetes.io/external: "events.propsproject.io"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:us-east-1:774122189772:certificate/67a72a96-f5bc-4377-86c2-50ff4f520925"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: '443'
+spec:
+  type: LoadBalancer
+  selector:
+    app: propschain-metrics
+  ports:
+    - name: "4004"
+      protocol: TCP
+      port: 8000
+      targetPort: 4004

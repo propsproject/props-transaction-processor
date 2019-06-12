@@ -1,0 +1,72 @@
+Attaching to sawtooth-validator-default, sawtooth-settings-tp-default, sawtooth-xo-tp-python-default, sawtooth-intkey-tp-python-default, sawtooth-rest-api-default, sawtooth-shell-default
+[36msawtooth-validator-default |[0m writing file: /etc/sawtooth/keys/validator.priv
+[36msawtooth-validator-default |[0m writing file: /etc/sawtooth/keys/validator.pub
+[33msawtooth-settings-tp-default |[0m [32m[2019-04-04 09:55:31.274 INFO     core][0m [37mregister attempt: OK[0m
+[36msawtooth-validator-default |[0m creating key directory: /root/.sawtooth/keys
+[36msawtooth-validator-default |[0m writing file: /root/.sawtooth/keys/my_key.priv
+[36msawtooth-validator-default |[0m writing file: /root/.sawtooth/keys/my_key.pub
+[33msawtooth-settings-tp-default |[0m [36m[2019-04-04 09:55:31.275 DEBUG    core][0m [37mreceived message of type: TP_PROCESS_REQUEST[0m
+[36msawtooth-validator-default |[0m Generated config-genesis.batch
+[36msawtooth-validator-default |[0m Processing config-genesis.batch...
+[36msawtooth-validator-default |[0m Generating /var/lib/sawtooth/genesis.batch
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.206 INFO     path][0m [37mSkipping path loading from non-existent config file: /etc/sawtooth/path.toml[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.215 INFO     validator][0m [37mSkipping validator config loading from non-existent config file: /etc/sawtooth/validator.toml[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.215 INFO     keys][0m [37mLoading signing key: /etc/sawtooth/keys/validator.priv[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.217 INFO     cli][0m [37msawtooth-validator (Hyperledger Sawtooth) version 1.0.5[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.217 INFO     cli][0m [37mconfig [path]: config_dir = "/etc/sawtooth"; config [path]: key_dir = "/etc/sawtooth/keys"; config [path]: data_dir = "/var/lib/sawtooth"; config [path]: log_dir = "/var/log/sawtooth"; config [path]: policy_dir = "/etc/sawtooth/policy"[0m
+[33msawtooth-settings-tp-default |[0m [32m[2019-04-04 09:55:31.287 INFO     handler][0m [37mSetting setting sawtooth.settings.vote.authorized_keys changed from None to 0249c73b6c67bc0a2ede122e9389aa08b68a4f35a24006b16d7ed15d181e85f846[0m
+[36msawtooth-validator-default |[0m [33m[2019-04-04 09:55:31.218 WARNING  cli][0m [37mNetwork key pair is not configured, Network communications between validators will not be authenticated or encrypted.[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.218 DEBUG    core][0m [37mglobal state database file is /var/lib/sawtooth/merkle-00.lmdb[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.219 DEBUG    core][0m [37mtxn receipt store file is /var/lib/sawtooth/txn_receipts-00.lmdb[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.219 DEBUG    core][0m [37mblock store file is /var/lib/sawtooth/block-00.lmdb[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.220 DEBUG    threadpool][0m [37mCreating thread pool executor Component[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.236 DEBUG    threadpool][0m [37mCreating thread pool executor Network[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.237 DEBUG    threadpool][0m [37mCreating thread pool executor Client[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.237 DEBUG    threadpool][0m [37mCreating thread pool executor Signature[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.238 DEBUG    threadpool][0m [37mCreating thread pool executor FutureCallback[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.238 DEBUG    threadpool][0m [37mCreating thread pool executor FutureCallback[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.242 DEBUG    threadpool][0m [37mCreating thread pool executor Waiting[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.242 DEBUG    threadpool][0m [37mCreating thread pool executor Executing[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.243 DEBUG    threadpool][0m [37mCreating thread pool executor Instrumented[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.245 DEBUG    selector_events][0m [37mUsing selector: ZMQSelector[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.256 INFO     interconnect][0m [37mListening on tcp://eth0:4004[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.256 DEBUG    dispatch][0m [37mAdded send_message function for connection ServerThread[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.256 DEBUG    dispatch][0m [37mAdded send_last_message function for connection ServerThread[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.258 DEBUG    genesis][0m [37mgenesis_batch_file: /var/lib/sawtooth/genesis.batch[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.258 DEBUG    genesis][0m [37mblock_chain_id: not yet specified[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.259 INFO     genesis][0m [37mProducing genesis block from /var/lib/sawtooth/genesis.batch[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.259 DEBUG    genesis][0m [37mAdding 1 batches[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.261 DEBUG    executor][0m [37mno transaction processors registered for processor type sawtooth_settings: 1.0[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.261 INFO     executor][0m [37mWaiting for transaction processor (sawtooth_settings, 1.0)[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.272 INFO     processor_handlers][0m [37mregistered transaction processor: connection_id=a27b6a50b1106be8db16dbc66ff4601d7c6c4bd87b4c91a555b6ad2a0c439a661c541d26d7fe12c75ba00d4fec573365d0d023894a47590ccf53caa22007e6d9, family=sawtooth_settings, version=1.0, namespaces=['000000'][0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.300 DEBUG    genesis][0m [37mProduced state hash 74a2fc15daf6721fc533daff5eb6060d47f3a5d7d316595191c067fd7dacacd2 for genesis block.[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.316 INFO     genesis][0m [37mGenesis block created: 870963b3affbbe674b0fba884a6c767bdd3bf8a099873bbfe803667b80511a71494c5456986b47f83624ef914dd684a1d84a760d1b8ef6d26af965fbadec4e52 (block_num:0, state:74a2fc15daf6721fc533daff5eb6060d47f3a5d7d316595191c067fd7dacacd2, previous_block_id:0000000000000000)[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.318 DEBUG    chain_id_manager][0m [37mwriting block chain id[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.319 DEBUG    genesis][0m [37mDeleting genesis data.[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.320 DEBUG    selector_events][0m [37mUsing selector: ZMQSelector[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.321 INFO     interconnect][0m [37mListening on tcp://eth0:8800[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.321 DEBUG    dispatch][0m [37mAdded send_message function for connection ServerThread[0m
+[36msawtooth-validator-default |[0m [36m[2019-04-04 09:55:31.334 DEBUG    dispatch][0m [37mAdded send_last_message function for connection ServerThread[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.336 INFO     chain][0m [37mChain controller initialized with chain head: 870963b3affbbe674b0fba884a6c767bdd3bf8a099873bbfe803667b80511a71494c5456986b47f83624ef914dd684a1d84a760d1b8ef6d26af965fbadec4e52 (block_num:0, state:74a2fc15daf6721fc533daff5eb6060d47f3a5d7d316595191c067fd7dacacd2, previous_block_id:0000000000000000)[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.336 INFO     publisher][0m [37mNow building on top of block: 870963b3affbbe674b0fba884a6c767bdd3bf8a099873bbfe803667b80511a71494c5456986b47f83624ef914dd684a1d84a760d1b8ef6d26af965fbadec4e52 (block_num:0, state:74a2fc15daf6721fc533daff5eb6060d47f3a5d7d316595191c067fd7dacacd2, previous_block_id:0000000000000000)[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.486 INFO     processor_handlers][0m [37mregistered transaction processor: connection_id=203de3f1715b7cc9323451413515d15dd605c91653e6744ad0dd8af70ed125951da69608592f07972bff6a3be213b5a962d3e23aa215d95ebe8199d939d4ca6c, family=xo, version=1.0, namespaces=['5b7349'][0m
+[32msawtooth-xo-tp-python-default |[0m [32m[2019-04-04 09:55:31.494 INFO     core][0m [37mregister attempt: OK[0m
+[36msawtooth-validator-default |[0m [32m[2019-04-04 09:55:31.534 INFO     processor_handlers][0m [37mregistered transaction processor: connection_id=0f14635b8b4ad71b662f2054d1102783c5f18a9dd96a111edfe2831739003b6bd27b6f527bfd2600f4279daf80b1ace67c7df2ea90e0f6bfb6cc0195c3eaa75b, family=intkey, version=1.0, namespaces=['1cf126'][0m
+[35msawtooth-intkey-tp-python-default |[0m [32m[2019-04-04 09:55:31.536 INFO     core][0m [37mregister attempt: OK[0m
+[34msawtooth-shell-default |[0m creating key directory: /root/.sawtooth/keys
+[34msawtooth-shell-default |[0m writing file: /root/.sawtooth/keys/root.priv
+[34msawtooth-shell-default |[0m writing file: /root/.sawtooth/keys/root.pub
+[32msawtooth-xo-tp-python-default exited with code 137
+[0m[35msawtooth-intkey-tp-python-default exited with code 137
+[0m[34msawtooth-shell-default exited with code 137
+[0m[31msawtooth-rest-api-default |[0m [31m[2019-04-04 09:57:24.793 ERROR    base_events][0m [37mTask was destroyed but it is pending!
+[31msawtooth-rest-api-default |[0m task: <Task pending coro=<StateDeltaSubscriberHandler._handle_disconnect() running at /usr/lib/python3/dist-packages/sawtooth_rest_api/state_delta_subscription_handler.py:174>>[0m
+[31msawtooth-rest-api-default |[0m ======== Running on http://rest-api:8008 ========
+[31msawtooth-rest-api-default |[0m (Press CTRL+C to quit)
+[31msawtooth-rest-api-default |[0m /usr/lib/python3.5/asyncio/base_events.py:412: RuntimeWarning: coroutine 'StateDeltaSubscriberHandler._handle_disconnect' was never awaited
+[31msawtooth-rest-api-default |[0m   self._ready.clear()
+[33msawtooth-settings-tp-default exited with code 137
+[0m[31msawtooth-rest-api-default exited with code 0
+[0m[36msawtooth-validator-default |[0m [32m[2019-04-04 09:57:33.834 INFO     executor][0m [37ma27b6a50b1106be8db16dbc66ff4601d7c6c4bd87b4c91a555b6ad2a0c439a661c541d26d7fe12c75ba00d4fec573365d0d023894a47590ccf53caa22007e6d9 did not respond to the Ping, removing transaction processor.[0m
+[36msawtooth-validator-default exited with code 137
+[0m

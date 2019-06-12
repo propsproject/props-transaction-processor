@@ -1,0 +1,85 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: propschain-metrics
+  labels:
+    app: propschain-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: propschain-metrics
+  template:
+    metadata:
+      labels:
+        app: propschain-metrics
+    spec:
+      containers:
+        - name: metrics-dash
+          image: kc1116/props-chain-grafana:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              hostPort: 3000
+
+        - name: chain-stats
+          image: influxdb
+          envFrom:
+          - configMapRef:
+              name: metrics-config
+          ports:
+            - name: http
+              containerPort: 8086
+              hostPort: 8086
+
+            - name: admin
+              containerPort: 8083
+              hostPort: 8083
+
+            - name: graphite
+              containerPort: 2003
+              hostPort: 2003
+
+          volumeMounts:
+              - name: metrics
+                mountPath: "/var/lib/influxdb"
+      volumes:
+        - name: metrics
+          emptyDir: {}        
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: propschain-metrics
+  annotations:
+    dns.alpha.kubernetes.io/external: "testnet.propsproject.io"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:us-east-1:774122189772:certificate/67a72a96-f5bc-4377-86c2-50ff4f520925"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: '443'
+spec:
+  type: LoadBalancer
+  selector:
+    app: propschain-metrics
+  ports:
+    - name: "443"
+      protocol: TCP
+      port: 443
+      targetPort: 3000
+    - name: "3000"
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+    - name: "8086"
+      protocol: TCP
+      port: 8086
+      targetPort: 8086
+    - name: "8083"
+      protocol: TCP
+      port: 8083
+      targetPort: 8083
+    - name: "2003"
+      protocol: TCP
+      port: 2003
+      targetPort: 2003

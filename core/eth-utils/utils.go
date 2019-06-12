@@ -1,0 +1,66 @@
+package eth_utils
+
+import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"strings"
+)
+
+func NormalizeAddress(s string) string {
+	if len(s) > 0 {
+		if s[:2] != "0x" {
+			return fmt.Sprintf("%s%s", "0x", strings.ToLower(s))
+		}
+		return strings.ToLower(s)
+	}
+	return s
+}
+
+
+//
+//
+//func main() {
+//	fmt.Println(verifySig(
+//		"0x829814B6E4dfeC4b703F2c6fDba28F1724094D11",
+//		"0x53edb561b0c1719e46e1e6bbbd3d82ff798762a66d0282a9adf47a114e32cbc600c248c247ee1f0fb3a6136a05f0b776db4ac82180442d3a80f3d67dde8290811c",
+//		[]byte("hello"),
+//	))
+//}
+
+func VerifySig(from, sigHex string, msg []byte) bool {
+	fromAddr := common.HexToAddress(from)
+
+	sig := hexutil.MustDecode(sigHex)
+	// https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L442
+	if sig[64] == 27 || sig[64] == 28 {
+		sig[64] -= 27
+	}
+
+	if sig[64] != 0 && sig[64] != 1 {
+		return false
+	}
+
+	pubKey, err := crypto.SigToPub(SignHash(msg), sig)
+	if err != nil {
+		return false
+	}
+
+	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
+
+	return fromAddr == recoveredAddr
+}
+
+// https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L404
+// signHash is a helper function that calculates a hash for the given message that can be
+// safely used to calculate a signature from.
+//
+// The hash is calculated as
+//   keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
+//
+// This gives context to the signed message and prevents signing of transactions.
+func SignHash(data []byte) []byte {
+	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(data), data)
+	return crypto.Keccak256([]byte(msg))
+}
