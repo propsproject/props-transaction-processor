@@ -1,4 +1,7 @@
-# pending-props 
+# props-transaction-processor
+
+![Props Token](https://propsproject.com/static/images/main-logo.png)
+ 
 this propject was generated with goprops-template
 
 ## Building docker image 
