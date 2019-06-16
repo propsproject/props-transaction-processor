@@ -4,7 +4,7 @@ node {
     "staging": "stag-pending-props",
     "production": "prod-pending-props"
   ]
-  def repository = "pending-props"
+  def repository = "props-transaction-processor"
 
   // The name of the service
   def serviceName = "pending-props-tp"
