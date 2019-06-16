@@ -24,11 +24,10 @@ RUN echo "deb [arch=amd64] http://repo.sawtooth.me/ubuntu/ci bionic universe" >>
 ENV GOPATH=/go
 ENV PATH=$PATH:/usr/lib/go-1.10/bin
 
-RUN mkdir -p /go/src/github.com/propsproject/pending-props
-WORKDIR /go/src/github.com/propsproject/pending-props
+RUN mkdir -p /go/src/github.com/propsproject/props-transaction-processor
+WORKDIR /go/src/github.com/propsproject/props-transaction-processor
 COPY . .
 
-RUN rm ./configs/development.json
 RUN make deps
 RUN make build
 
@@ -37,8 +36,8 @@ RUN apt-get update \
     && apt-get install -y -q libzmq3-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=multistage /go/src/github.com/propsproject/pending-props/build/bin/pending-props-tp /go/bin/
-COPY --from=multistage /go/src/github.com/propsproject/pending-props/configs/default.json /go/bin/configs/
+COPY --from=multistage /go/src/github.com/propsproject/props-transaction-processor/build/bin/pending-props-tp /go/bin/
+COPY --from=multistage /go/src/github.com/propsproject/props-transaction-processor/configs/default.json /go/bin/configs/
 EXPOSE 3000
 ENTRYPOINT ["/go/bin/pending-props-tp -c -f /go/bin/configs/default.json"]
 
