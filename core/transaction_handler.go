@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/propsproject/pending-props/core/rpc"
-	"github.com/propsproject/pending-props/core/state"
+	"github.com/propsproject/props-transaction-processor/core/rpc"
+	"github.com/propsproject/props-transaction-processor/core/state"
 	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
 )

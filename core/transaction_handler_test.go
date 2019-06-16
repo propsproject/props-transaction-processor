@@ -2,7 +2,7 @@ package core
 
 import (
 	"testing"
-	"github.com/propsproject/pending-props/core/state"
+	"github.com/propsproject/props-transaction-processor/core/state"
 )
 
 var tHandler = NewTransactionHandler()

@@ -3,7 +3,7 @@ package state
 import (
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	"github.com/propsproject/pending-props/core/proto/pending_props_pb"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"strconv"
 	"time"

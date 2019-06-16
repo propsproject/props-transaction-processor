@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/propsproject/pending-props/core"
+	"github.com/propsproject/props-transaction-processor/core"
 	"github.com/propsproject/sawtooth-go-sdk/logging"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

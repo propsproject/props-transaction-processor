@@ -248,7 +248,7 @@ const externalBalanceUpdate = async (address, balance, ethTransactionHash, block
     //setup RPC request
     const params = new any.Any();
     params.setValue(balanceUpdate.serializeBinary());
-    params.setTypeUrl('github.com/propsproject/pending-props/protos/pending_props_pb.BalanceUpdate');
+    params.setTypeUrl('github.com/propsproject/props-transaction-processor/protos/pending_props_pb.BalanceUpdate');
 
     const request = newRPCRequest(params, payloads_pb.Method.BALANCE_UPDATE);
     const requestBytes = request.serializeBinary();
@@ -345,7 +345,7 @@ const linkWallet = async (address, applicationId, userId, signature) => {
     //setup RPC request
     const params = new any.Any();
     params.setValue(walletToUser.serializeBinary());
-    params.setTypeUrl('github.com/propsproject/pending-props/protos/pending_props_pb.WalletToUser');
+    params.setTypeUrl('github.com/propsproject/props-transaction-processor/protos/pending_props_pb.WalletToUser');
 
     const request = newRPCRequest(params, payloads_pb.Method.WALLET_LINK);
     const requestBytes = request.serializeBinary();
@@ -442,7 +442,7 @@ const transaction = async (transactionType, applicationId, userId, amount, descr
     //setup RPC request
     const params = new any.Any();
     params.setValue(transactionData.serializeBinary());
-    params.setTypeUrl('github.com/propsproject/pending-props/protos/pending_props_pb.Transaction');
+    params.setTypeUrl('github.com/propsproject/props-transaction-processor/protos/pending_props_pb.Transaction');
 
     const request = newRPCRequest(params, transactionType);
     const requestBytes = request.serializeBinary();
@@ -536,7 +536,7 @@ const updateLastBlockId = async (blockId) => {
     //setup RPC request
     const params = new any.Any();
     params.setValue(blockUpdate.serializeBinary());
-    params.setTypeUrl('github.com/propsproject/pending-props/protos/pending_props_pb.LastEthBlock');
+    params.setTypeUrl('github.com/propsproject/props-transaction-processor/protos/pending_props_pb.LastEthBlock');
 
     const request = newRPCRequest(params, payloads_pb.Method.LAST_ETH_BLOCK_UPDATE);
     const requestBytes = request.serializeBinary();
@@ -809,7 +809,7 @@ const logActivity = async(userId, appId, timestamp, date) => {
 
     const params = new any.Any();
     params.setValue(activityLog.serializeBinary());
-    params.setTypeUrl('github.com/propsproject/pending-props/protos/pending_props_pb.ActivityLog');
+    params.setTypeUrl('github.com/propsproject/props-transaction-processor/protos/pending_props_pb.ActivityLog');
     const request = newRPCRequest(params, payloads_pb.Method.ACTIVITY_LOG);
     const requestBytes = request.serializeBinary();
 

@@ -4,7 +4,7 @@ import (
 	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
 	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"fmt"
-	"github.com/propsproject/pending-props/core/proto/pending_props_pb"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/golang/protobuf/proto"
 )
 

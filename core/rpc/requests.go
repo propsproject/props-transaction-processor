@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/propsproject/pending-props/core/eth-utils"
-	"github.com/propsproject/pending-props/core/proto/pending_props_pb"
+	"github.com/propsproject/props-transaction-processor/core/eth-utils"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/propsproject/sawtooth-go-sdk/logging"
 )
 

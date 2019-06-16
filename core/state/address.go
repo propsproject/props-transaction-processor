@@ -2,8 +2,8 @@ package state
 
 import (
 	"fmt"
-	"github.com/propsproject/pending-props/core/eth-utils"
-	"github.com/propsproject/pending-props/core/proto/pending_props_pb"
+	"github.com/propsproject/props-transaction-processor/core/eth-utils"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"strconv"
 	"strings"
 )

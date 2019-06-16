@@ -1,10 +1,10 @@
 package test
 
 import (
-	"github.com/propsproject/pending-props/core/state"
+	"github.com/propsproject/props-transaction-processor/core/state"
 	"strconv"
 
-	//"github.com/propsproject/pending-props/core/state"
+	//"github.com/propsproject/props-transaction-processor/core/state"
 	"log"
 	"testing"
 	"time"

@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"testing"
-	"github.com/propsproject/pending-props/core/proto/pending_props_pb"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
 	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"github.com/gogo/protobuf/proto"
