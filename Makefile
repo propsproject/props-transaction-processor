@@ -1,5 +1,5 @@
 OUT :=./build/bin/pending-props-tp
-PKG := github.com/propsproject/pending-props/cmd
+PKG := github.com/propsproject/props-transaction-processor/cmd
 DOCKERFILE := ./build/package/Dockerfile
 VERSION := $(shell git describe --tags --always --long --dirty)
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
@@ -41,8 +41,8 @@ out:
 
 protos:
 
-	protoc -I ./protos ./protos/earning.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto --go_out=./core/proto/pending_props_pb
-	protoc -I ./protos ./protos/earning.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto --js_out=import_style=commonjs,binary:./dev-cli/proto
+	protoc -I ./protos ./protos/transaction.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto --go_out=./core/proto/pending_props_pb
+	protoc -I ./protos ./protos/transaction.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto --js_out=import_style=commonjs,binary:./dev-cli/proto
 
 clean:
 	-@rm ${OUT} ${OUT}-v*

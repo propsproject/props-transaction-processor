@@ -6,7 +6,7 @@ import (
 	"github.com/propsproject/sawtooth-go-sdk/processor"
 )
 
-func (s *State) AddEvent(event pending_props_pb.EarningEvent, eventType string, attributes ...processor.Attribute) error {
+func (s *State) AddEvent(event pending_props_pb.TransactionEvent, eventType string, attributes ...processor.Attribute) error {
 	b, err := proto.Marshal(&event)
 	if err != nil {
 		return err

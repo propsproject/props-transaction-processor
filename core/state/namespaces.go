@@ -17,9 +17,7 @@ var (
 
 	globalEarningsPrefix = "earnings"
 
-	earningsPending = fmt.Sprintf("%s:%s:pending", globalPrefix, globalEarningsPrefix)
-	earningsRevoked = fmt.Sprintf("%s:%s:revoked", globalPrefix, globalEarningsPrefix)
-	earningsSettled = fmt.Sprintf("%s:%s:settled", globalPrefix, globalEarningsPrefix)
+	transactionPrefix = fmt.Sprintf("%s:%s:transaction", globalPrefix, globalEarningsPrefix)
 
 	settlementPrefix 					= fmt.Sprintf("%s:%s:settlements", globalPrefix, globalEarningsPrefix)
 	balancePrefix						= fmt.Sprintf("%s:%s:balance", globalPrefix, globalEarningsPrefix)
@@ -60,16 +58,8 @@ func (s *NSMngr) registerNamespaces(prefixes ...string) *NSMngr {
 	return s
 }
 
-func (s *NSMngr) EarningsPendingPrefix() string {
-	return s.computeDefaultPrefix(earningsPending)
-}
-
-func (s *NSMngr) EarningsRevokedPrefix() string {
-	return s.computeDefaultPrefix(earningsRevoked)
-}
-
-func (s *NSMngr) EarningsSettledPrefix() string {
-	return s.computeDefaultPrefix(earningsSettled)
+func (s *NSMngr) TransactionPrefix() string {
+	return s.computeDefaultPrefix(transactionPrefix)
 }
 
 func (s *NSMngr) NoncePrefix() string {
@@ -117,5 +107,5 @@ func (s *NSMngr) Namespaces() []string {
 //}
 
 func init()  {
-	NamespaceManager = newAddrMngr().registerNamespaces(earningsPending, earningsRevoked, earningsSettled, settlementPrefix, noncePrefix, balancePrefix, balanceUpdatesTransactionHashPrefix, lastEthBlockPrefix, walletLinkPrefix, activityLogPrefix)
+	NamespaceManager = newAddrMngr().registerNamespaces(transactionPrefix, settlementPrefix, noncePrefix, balancePrefix, balanceUpdatesTransactionHashPrefix, lastEthBlockPrefix, walletLinkPrefix, activityLogPrefix)
 }

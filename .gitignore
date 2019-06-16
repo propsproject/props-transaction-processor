@@ -1,5 +1,5 @@
 .idea
 pengind-props-tp
 *.iml
-
+configs/development.json
 dev-scripts/node_modules

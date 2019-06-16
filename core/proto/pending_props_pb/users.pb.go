@@ -3,57 +3,26 @@
 
 package pending_props_pb
 
-import (
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	math "math"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
-
 type ApplicationUser struct {
-	ApplicationId        string   `protobuf:"bytes,1,opt,name=application_id,json=applicationId,proto3" json:"application_id,omitempty"`
-	UserId               string   `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Signature            string   `protobuf:"bytes,3,opt,name=signature,proto3" json:"signature,omitempty"`
-	Timestamp            int64    `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	ApplicationId string `protobuf:"bytes,1,opt,name=application_id,json=applicationId" json:"application_id,omitempty"`
+	UserId        string `protobuf:"bytes,2,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+	Signature     string `protobuf:"bytes,3,opt,name=signature" json:"signature,omitempty"`
+	Timestamp     int64  `protobuf:"varint,4,opt,name=timestamp" json:"timestamp,omitempty"`
 }
 
-func (m *ApplicationUser) Reset()         { *m = ApplicationUser{} }
-func (m *ApplicationUser) String() string { return proto.CompactTextString(m) }
-func (*ApplicationUser) ProtoMessage()    {}
-func (*ApplicationUser) Descriptor() ([]byte, []int) {
-	return fileDescriptor_030765f334c86cea, []int{0}
-}
-
-func (m *ApplicationUser) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ApplicationUser.Unmarshal(m, b)
-}
-func (m *ApplicationUser) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ApplicationUser.Marshal(b, m, deterministic)
-}
-func (m *ApplicationUser) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ApplicationUser.Merge(m, src)
-}
-func (m *ApplicationUser) XXX_Size() int {
-	return xxx_messageInfo_ApplicationUser.Size(m)
-}
-func (m *ApplicationUser) XXX_DiscardUnknown() {
-	xxx_messageInfo_ApplicationUser.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ApplicationUser proto.InternalMessageInfo
+func (m *ApplicationUser) Reset()                    { *m = ApplicationUser{} }
+func (m *ApplicationUser) String() string            { return proto.CompactTextString(m) }
+func (*ApplicationUser) ProtoMessage()               {}
+func (*ApplicationUser) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
 
 func (m *ApplicationUser) GetApplicationId() string {
 	if m != nil {
@@ -84,37 +53,14 @@ func (m *ApplicationUser) GetTimestamp() int64 {
 }
 
 type WalletToUser struct {
-	Address              string             `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Users                []*ApplicationUser `protobuf:"bytes,2,rep,name=users,proto3" json:"users,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
-	XXX_unrecognized     []byte             `json:"-"`
-	XXX_sizecache        int32              `json:"-"`
+	Address string             `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
+	Users   []*ApplicationUser `protobuf:"bytes,2,rep,name=users" json:"users,omitempty"`
 }
 
-func (m *WalletToUser) Reset()         { *m = WalletToUser{} }
-func (m *WalletToUser) String() string { return proto.CompactTextString(m) }
-func (*WalletToUser) ProtoMessage()    {}
-func (*WalletToUser) Descriptor() ([]byte, []int) {
-	return fileDescriptor_030765f334c86cea, []int{1}
-}
-
-func (m *WalletToUser) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WalletToUser.Unmarshal(m, b)
-}
-func (m *WalletToUser) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WalletToUser.Marshal(b, m, deterministic)
-}
-func (m *WalletToUser) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WalletToUser.Merge(m, src)
-}
-func (m *WalletToUser) XXX_Size() int {
-	return xxx_messageInfo_WalletToUser.Size(m)
-}
-func (m *WalletToUser) XXX_DiscardUnknown() {
-	xxx_messageInfo_WalletToUser.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WalletToUser proto.InternalMessageInfo
+func (m *WalletToUser) Reset()                    { *m = WalletToUser{} }
+func (m *WalletToUser) String() string            { return proto.CompactTextString(m) }
+func (*WalletToUser) ProtoMessage()               {}
+func (*WalletToUser) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
 
 func (m *WalletToUser) GetAddress() string {
 	if m != nil {
@@ -135,9 +81,9 @@ func init() {
 	proto.RegisterType((*WalletToUser)(nil), "pending_props_pb.WalletToUser")
 }
 
-func init() { proto.RegisterFile("users.proto", fileDescriptor_030765f334c86cea) }
+func init() { proto.RegisterFile("users.proto", fileDescriptor4) }
 
-var fileDescriptor_030765f334c86cea = []byte{
+var fileDescriptor4 = []byte{
 	// 206 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x90, 0x3d, 0x4b, 0xc6, 0x30,
 	0x14, 0x85, 0xc9, 0x5b, 0x6d, 0xe9, 0xad, 0x5f, 0x64, 0x31, 0x83, 0x43, 0x2d, 0x08, 0x9d, 0x3a,

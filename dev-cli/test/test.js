@@ -20,7 +20,7 @@ let earningAddresses = [];
 const amounts = [125, 50.5];
 const descriptions = ["Broadcasting", "Watching"];
 const waitTimeUntilOnChain = 750; // miliseconds
-const longerTestWaitMultiplier = 4;
+const longerTestWaitMultiplier = 5;
 
 // data about the ethereum transactions we're testing with
 const walletAddress =  "0x2d4dcf292bc5bd8d7246099052dfc76b3cdd3524";
@@ -34,6 +34,12 @@ const balanceAtBlock2 = "428513884000000000000000";
 const txHash2 = "0x9ef12357191c917cbc3c8102c36948dc731b650852448c51f4705d0f30119100";
 const blockNum2 = "3966915";
 const timestamp2 = "1551632827";
+
+const settlementTxHash = "0xd0dae165cd740518faf212781e4a707a738970c030d7a3b27f04109ca607447e";
+const settlementAmount = 1; // which is 1e18 = 1000000000000000000
+const settlementBalanceAtBlock = "428511433000000000000000";
+const settlementTimestamp = "1553107867";
+const settlementBlockNum = "3967331";
 
 
 // remove pending-props.js logs
@@ -96,10 +102,10 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue an earning', async() => {
         const addresses = {};
-        const app = "app1";
+        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
         const user = "user1";
         // issue
-        await pendingProps.issue(app, user, amounts[0], descriptions[0], addresses);
+        await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[0], descriptions[0], addresses);
         // console.log(JSON.stringify(addresses));
         global.timeOfStart = Math.floor(Date.now());
         // wait a bit for it to be on chain
@@ -108,25 +114,24 @@ describe('Sawtooth side chain test', async () => {
             // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
             return (timePassed > waitTimeUntilOnChain)
         }, 10000, 100);
-        const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'earning');
+        const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'transaction');
         earningAddresses.push(addresses['stateAddress']);
         // console.log(`earningOnChain=${JSON.stringify(earningOnChain)}`);
         const balanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app, user)
         const balanceOnChain = await pendingProps.queryState(balanceAddress, 'balance');
         // console.log(`balanceOnChain=${JSON.stringify(balanceOnChain)}`);
-        const earningDetails = earningOnChain[0].earning.details;
         const balanceObj = balanceOnChain[0];
         const balanceDetails = balanceObj.balanceDetails;
-        const earningPropsAmount = new BigNumber(earningDetails.amountEarned, 10);
+        const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
         const balancePendingAmount = new BigNumber(balanceDetails.pending, 10);
         const balanceTotalPendingAmount = new BigNumber(balanceDetails.totalPending, 10);
 
         // expect earning details to be correct
         expect(earningPropsAmount.div(1e18).toString()).to.be.equal(amounts[0].toString());
-        expect(earningDetails.userId).to.be.equal(user);
-        expect(earningDetails.applicationId).to.be.equal(app);
-        expect(earningDetails.description).to.be.equal(descriptions[0]);
-        expect(earningDetails.status).to.be.equal(0);
+        expect(earningOnChain[0].transaction.userId).to.be.equal(user);
+        expect(earningOnChain[0].transaction.applicationId).to.be.equal(app);
+        expect(earningOnChain[0].transaction.description).to.be.equal(descriptions[0]);
+        expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.ISSUE);
 
         // expect balance details to be correct
         expect(balancePendingAmount.div(1e18).toString()).to.be.equal(amounts[0].toString());
@@ -140,10 +145,10 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue another earning', async() => {
         const addresses = {};
-        const app = "app1";
+        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
         const user = "user1";
         // issue
-        await pendingProps.issue(app, user, amounts[1], descriptions[1], addresses);
+        await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[1], descriptions[1], addresses);
         // console.log(JSON.stringify(addresses));
         global.timeOfStart = Math.floor(Date.now());
         // wait a bit for it to be on chain
@@ -152,42 +157,41 @@ describe('Sawtooth side chain test', async () => {
             // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
             return (timePassed > waitTimeUntilOnChain)
         }, 10000, 100);
-        const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'earning');
+        const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'transaction');
         earningAddresses.push(addresses['stateAddress']);
         // console.log(`earningOnChain=${JSON.stringify(earningOnChain)}`);
         const balanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app, user)
         const balanceOnChain = await pendingProps.queryState(balanceAddress, 'balance');
         // console.log(`balanceOnChain=${JSON.stringify(balanceOnChain)}`);
-        const earningDetails = earningOnChain[0].earning.details;
         const balanceObj = balanceOnChain[0];
         const balanceDetails = balanceObj.balanceDetails;
-        const earningPropsAmount = new BigNumber(earningDetails.amountEarned, 10);
+        const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
         const balancePendingAmount = new BigNumber(balanceDetails.pending, 10);
         const balanceTotalPendingAmount = new BigNumber(balanceDetails.totalPending, 10);
 
         // expect earning details to be correct
         expect(earningPropsAmount.div(1e18).toString()).to.be.equal(amounts[1].toString());
-        expect(earningDetails.userId).to.be.equal(user);
-        expect(earningDetails.applicationId).to.be.equal(app);
-        expect(earningDetails.description).to.be.equal(descriptions[1]);
-        expect(earningDetails.status).to.be.equal(0);
+        expect(earningOnChain[0].transaction.userId).to.be.equal(user);
+        expect(earningOnChain[0].transaction.applicationId).to.be.equal(app);
+        expect(earningOnChain[0].transaction.description).to.be.equal(descriptions[1]);
+        expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.ISSUE);
 
         // expect balance details to be correct
         const sum = amounts.slice(0,2).reduce(add).toString();
         expect(balancePendingAmount.div(1e18).toString()).to.be.equal(sum);
         expect(balanceTotalPendingAmount.div(1e18).toString()).to.be.equal(sum);
         expect(balanceObj.userId).to.be.equal('user1');
-        expect(balanceObj.applicationId).to.be.equal('app1');
+        expect(balanceObj.applicationId).to.be.equal('0xa80a6946f8af393d422cd6feee9040c25121a3b8');
         expect(balanceDetails.lastUpdateType).to.be.equal(0);
         expect(balanceObj.type).to.be.equal(0);
         expect(balanceObj.linkedWallet).to.be.equal("");
     });
 
-    it('Successfully revoke one earning', async() => {
-        const revokeAddress = {};
+    it('Successfully revoke an amount', async() => {
+        const addresses = {};
         const user = "user1";
-        const app = "app1";
-        await pendingProps.revoke([earningAddresses[0]], revokeAddress);
+        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app, user, amounts[0]+amounts[1], descriptions[0]+"-revoke", addresses);
         // console.log(JSON.stringify(revokeAddress));
         global.timeOfStart = Math.floor(Date.now());
         // wait a bit for it to be on chain
@@ -196,78 +200,23 @@ describe('Sawtooth side chain test', async () => {
             // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
             return (timePassed > waitTimeUntilOnChain)
         }, 10000, 100);
-        const earningOnChain = await pendingProps.queryState(revokeAddress['addresses'][0], 'earning');
+        const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'transaction');
         // console.log(`earningOnChain=${JSON.stringify(earningOnChain)}`);
-
-        const revokeOnChain = await pendingProps.queryState(revokeAddress['revokeAddresses'][0], 'earning');
-        // console.log(`revokeOnChain=${JSON.stringify(revokeOnChain)}`);
 
         const balanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app, user)
         const balanceOnChain = await pendingProps.queryState(balanceAddress, 'balance');
         // console.log(`balanceOnChain=${JSON.stringify(balanceOnChain)}`);
-        const earningDetails = revokeOnChain[0].earning.details;
         const balanceObj = balanceOnChain[0];
         const balanceDetails = balanceObj.balanceDetails;
-        const earningPropsAmount = new BigNumber(earningDetails.amountEarned, 10);
+        const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
         const balancePendingAmount = new BigNumber(balanceDetails.pending, 10);
         const balanceTotalPendingAmount = new BigNumber(balanceDetails.totalPending, 10);
 
-        // expect earning record to be removed
-        expect(earningOnChain.length).to.be.equal(0);
-        // expect revoke earning details to be correct
-        expect(earningPropsAmount.div(1e18).toString()).to.be.equal(amounts[0].toString());
-        expect(earningDetails.userId).to.be.equal(user);
-        expect(earningDetails.applicationId).to.be.equal(app);
-        expect(earningDetails.description).to.be.equal(descriptions[0]);
-        expect(earningDetails.status).to.be.equal(0);
-
-        // expect balance details to be correct
-        expect(balancePendingAmount.div(1e18).toString()).to.be.equal(amounts[1].toString());
-        expect(balanceTotalPendingAmount.div(1e18).toString()).to.be.equal(amounts[1].toString());
-        expect(balanceObj.userId).to.be.equal(user);
-        expect(balanceObj.applicationId).to.be.equal(app);
-        expect(balanceDetails.lastUpdateType).to.be.equal(0);
-        expect(balanceObj.type).to.be.equal(0);
-        expect(balanceObj.linkedWallet).to.be.equal("");
-    });
-
-    it('Successfully revoke the second earning', async() => {
-        const revokeAddress = {};
-        const user = "user1";
-        const app = "app1";
-        await pendingProps.revoke([earningAddresses[1]], revokeAddress);
-        // console.log(JSON.stringify(revokeAddress));
-        global.timeOfStart = Math.floor(Date.now());
-        // wait a bit for it to be on chain
-        await waitUntil(() => {
-            const timePassed =  Math.floor(Date.now()) - global.timeOfStart;
-            // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
-            return (timePassed > waitTimeUntilOnChain)
-        }, 10000, 100);
-        const earningOnChain = await pendingProps.queryState(revokeAddress['addresses'][0], 'earning');
-        // console.log(`earningOnChain=${JSON.stringify(earningOnChain)}`);
-
-        const revokeOnChain = await pendingProps.queryState(revokeAddress['revokeAddresses'][0], 'earning');
-        // console.log(`revokeOnChain=${JSON.stringify(revokeOnChain)}`);
-
-        const balanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app, user)
-        const balanceOnChain = await pendingProps.queryState(balanceAddress, 'balance');
-        // console.log(`balanceOnChain=${JSON.stringify(balanceOnChain)}`);
-        const earningDetails = revokeOnChain[0].earning.details;
-        const balanceObj = balanceOnChain[0];
-        const balanceDetails = balanceObj.balanceDetails;
-        const earningPropsAmount = new BigNumber(earningDetails.amountEarned, 10);
-        const balancePendingAmount = new BigNumber(balanceDetails.pending, 10);
-        const balanceTotalPendingAmount = new BigNumber(balanceDetails.totalPending, 10);
-
-        // expect earning record to be removed
-        expect(earningOnChain.length).to.be.equal(0);
-        // expect revoke earning details to be correct
-        expect(earningPropsAmount.div(1e18).toString()).to.be.equal(amounts[1].toString());
-        expect(earningDetails.userId).to.be.equal(user);
-        expect(earningDetails.applicationId).to.be.equal(app);
-        expect(earningDetails.description).to.be.equal(descriptions[1]);
-        expect(earningDetails.status).to.be.equal(0);
+        expect(earningPropsAmount.div(1e18).toString()).to.be.equal((amounts[0]+amounts[1]).toString());
+        expect(earningOnChain[0].transaction.userId).to.be.equal(user);
+        expect(earningOnChain[0].transaction.applicationId).to.be.equal(app);
+        expect(earningOnChain[0].transaction.description).to.be.equal(descriptions[0]+"-revoke");
+        expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.REVOKE);
 
         // expect balance details to be correct
         expect(balancePendingAmount.div(1e18).toString()).to.be.equal('0');
@@ -278,6 +227,7 @@ describe('Sawtooth side chain test', async () => {
         expect(balanceObj.type).to.be.equal(0);
         expect(balanceObj.linkedWallet).to.be.equal("");
     });
+
 
     it('Successfully update mainchain balance', async() => {
         await pendingProps.externalBalanceUpdate(walletAddress, balanceAtBlock, txHash, blockNum, timestamp);
@@ -306,10 +256,11 @@ describe('Sawtooth side chain test', async () => {
     });
 
     it('Successfully link app user to wallet', async() => {
-        const app = "app1";
+        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
         const user = "user1";
         const sig = await pendingProps.signMessage(`${app}_${user}`, walletAddress, pk); // "signature11";
-
+        const testSig =  await pendingProps.signMessage(`${app}_8195af8336c01e8014348a906b6adfcf`, walletAddress, pk); // "signature11";
+        console.log(`testSig=${testSig}`);
         // issue
         await pendingProps.linkWallet(walletAddress, app, user, sig);
         global.timeOfStart = Math.floor(Date.now());
@@ -389,10 +340,10 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue an earning to user with linked wallet', async() => {
         const addresses = {};
-        const app = "app1";
+        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
         const user = "user1";
         // issue
-        await pendingProps.issue(app, user, amounts[0], descriptions[0], addresses);
+        await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[0], descriptions[0], addresses);
         // console.log(JSON.stringify(addresses));
         global.timeOfStart = Math.floor(Date.now());
         // wait a bit for it to be on chain
@@ -440,10 +391,10 @@ describe('Sawtooth side chain test', async () => {
     });
 
     it('Successfully revoke an earning of a user with a linked wallet', async() => {
-        const revokeAddress = {};
+        const addresses = {};
         const user = "user1";
-        const app = "app1";
-        await pendingProps.revoke([earningAddresses[2]], revokeAddress);
+        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app, user, amounts[0], descriptions[0], addresses);
         // console.log(JSON.stringify(revokeAddress));
         global.timeOfStart = Math.floor(Date.now());
         // wait a bit for it to be on chain
@@ -493,7 +444,7 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully update mainchain balance of a linked wallet (2nd update)', async() => {
         const user = "user1";
-        const app = "app1";
+        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
 
         await pendingProps.externalBalanceUpdate(walletAddress, balanceAtBlock2, txHash2, blockNum2, timestamp2);
         global.timeOfStart = Math.floor(Date.now());
@@ -549,7 +500,7 @@ describe('Sawtooth side chain test', async () => {
     it('Successfully link another app user to same wallet', async() => {
         const app = "app2";
         const user = "user1";
-        const linkedApp = "app1";
+        const linkedApp = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
         const linkedUser = "user1";
         const sig =  await pendingProps.signMessage(`${app}_${user}`, walletAddress, pk); // "signature21";
 
@@ -613,12 +564,12 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue an earning to user with linked wallet with another user', async() => {
         const addresses = {};
-        const app1 = "app1";
+        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
         const user1 = "user1";
         const app2 = "app2";
         const user2 = "user1";
         // issue
-        await pendingProps.issue(app1, user1, amounts[0], descriptions[0], addresses);
+        await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0]*2, descriptions[0], addresses);
         // console.log(JSON.stringify(addresses));
         earningAddresses = [];
         earningAddresses.push(addresses['stateAddress']);
@@ -656,12 +607,12 @@ describe('Sawtooth side chain test', async () => {
         const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
 
         // expect balance details to be correct considering the linked wallet
-        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal(amounts[0].toString());
+        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]*2).toString());
         expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
         expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
-        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal(amounts[0].toString());
-        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal(amounts[0].toString());
-        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal(amounts[0].toString());
+        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]*2).toString());
+        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal((amounts[0]*2).toString());
+        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0]*2).toString());
         expect(balanceTransferableAmount1.toString()).to.be.equal(balanceAtBlock2.toString());
         expect(balanceTransferableAmount2.toString()).to.be.equal(balanceAtBlock2.toString());
         expect(walletBalanceTransferableAmount.toString()).to.be.equal(balanceAtBlock2.toString());
@@ -669,11 +620,11 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully revoke an earning of a user with a linked wallet with another user', async() => {
         const addresses = {};
-        const app1 = "app1";
+        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
         const user1 = "user1";
         const app2 = "app2";
         const user2 = "user1";
-        await pendingProps.revoke([earningAddresses[0]], addresses);
+        await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app1, user1, amounts[0], descriptions[0], addresses);
         // console.log(JSON.stringify(addresses));
         global.timeOfStart = Math.floor(Date.now());
         // wait a bit for it to be on chain
@@ -709,16 +660,156 @@ describe('Sawtooth side chain test', async () => {
         const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
 
         // expect balance details to be correct considering the linked wallet
-        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal('0');
+        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal(amounts[0].toString());
         expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
-        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal('0');
-        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal('0');
+        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal(amounts[0].toString());
+        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal(amounts[0].toString());
         expect(balanceTransferableAmount1.toString()).to.be.equal(balanceAtBlock2.toString());
         expect(balanceTransferableAmount2.toString()).to.be.equal(balanceAtBlock2.toString());
         expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
-        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal('0');
+        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal(amounts[0].toString());
         expect(walletBalanceTransferableAmount.toString()).to.be.equal(balanceAtBlock2.toString());
     });
+
+    it('Successfully settle a linked wallet with an external balance update with tx from being the rewardsAddress of the app (hardcoded in TP)', async() => {
+        const addresses = {};
+        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const user1 = "user1";
+        const app2 = "app2";
+        const user2 = "user1";
+
+        /*
+        const settlementTxHash = "0xd0dae165cd740518faf212781e4a707a738970c030d7a3b27f04109ca607447e";
+        const settlementAmount = 1; // which is 1e18 = 1000000000000000000
+        const settlementBalanceAtBlock = "428511433000000000000000";
+        const settlementTimestamp = "1553107867";
+        const settlementBlockNum = "3967331";
+
+         */
+
+        await pendingProps.externalBalanceUpdate(walletAddress, settlementBalanceAtBlock, settlementTxHash, settlementBlockNum, settlementTimestamp, addresses);
+        global.timeOfStart = Math.floor(Date.now());
+        // wait a bit for it to be on chain
+        await waitUntil(() => {
+            const timePassed =  Math.floor(Date.now()) - global.timeOfStart;
+            // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
+            return (timePassed > (waitTimeUntilOnChain*longerTestWaitMultiplier*2))
+        }, 300000, 100);
+
+        const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'transaction');
+            // console.log(JSON.stringify(earningOnChain));
+        const balanceAddress1 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app1, user1)
+        const balanceOnChain1 = await pendingProps.queryState(balanceAddress1, 'balance');
+        const balanceAddress2 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app2, user2)
+        const balanceOnChain2 = await pendingProps.queryState(balanceAddress2, 'balance');
+        const walletBalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", walletAddress)
+        const walletBalanceOnChain = await pendingProps.queryState(walletBalanceAddress, 'balance');
+        //     // console.log(`balanceOnChain1=${JSON.stringify(balanceOnChain1)}`);
+        //     // console.log(`balanceOnChain2=${JSON.stringify(balanceOnChain2)}`);
+        //
+        const balanceObj1 = balanceOnChain1[0];
+        const balanceDetails1 = balanceObj1.balanceDetails;
+        const balanceObj2 = balanceOnChain2[0];
+        const balanceDetails2 = balanceObj2.balanceDetails;
+        const walletBalanceObj = walletBalanceOnChain[0];
+        const walletBalanceDetails = walletBalanceObj.balanceDetails;
+
+
+        const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
+        // expect earning details to be correct
+        expect(earningPropsAmount.div(1e18).toString()).to.be.equal(settlementAmount.toString());
+        expect(earningOnChain[0].transaction.userId).to.be.equal(user1);
+        expect(earningOnChain[0].transaction.applicationId).to.be.equal(app1);
+        expect(earningOnChain[0].transaction.description).to.be.equal('Settlement');
+        expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.SETTLE);
+        expect(earningOnChain[0].transaction.txHash).to.be.equal(settlementTxHash);
+        expect(earningOnChain[0].transaction.wallet).to.be.equal(walletAddress);
+
+        const balancePendingAmount1 = new BigNumber(balanceDetails1.pending, 10);
+        const balancePendingAmount2 = new BigNumber(balanceDetails2.pending, 10);
+        const balanceTotalPendingAmount1 = new BigNumber(balanceDetails1.totalPending, 10);
+        const balanceTotalPendingAmount2 = new BigNumber(balanceDetails2.totalPending, 10);
+        const balanceTransferableAmount1 = new BigNumber(balanceDetails1.transferable, 10);
+        const balanceTransferableAmount2 = new BigNumber(balanceDetails2.transferable, 10);
+        const walletBalancePendingAmount = new BigNumber(walletBalanceDetails.pending, 10);
+        const walletBalanceTotalPendingAmount = new BigNumber(walletBalanceDetails.totalPending, 10);
+        const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
+
+        // expect balance details to be correct considering the linked wallet
+        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
+        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(balanceTransferableAmount1.toString()).to.be.equal(settlementBalanceAtBlock.toString());
+        expect(balanceTransferableAmount2.toString()).to.be.equal(settlementBalanceAtBlock.toString());
+        expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
+        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(walletBalanceTransferableAmount.toString()).to.be.equal(settlementBalanceAtBlock.toString());
+    });
+
+    // it('Successfully settle a user with a linked wallet', async() => {
+    //     const addresses = {};
+    //     const app1 = "app1";
+    //     const user1 = "user1";
+    //     const app2 = "app2";
+    //     const user2 = "user1";
+    //     await pendingProps.transaction(pendingProps.transactionTypes.SETTLE, app1, user1, settlementAmount, 'settle1', settlementTxHash, walletAddress, addresses);
+    //     // console.log(JSON.stringify(addresses));
+    //     global.timeOfStart = Math.floor(Date.now());
+    //     // wait a bit for it to be on chain
+    //     await waitUntil(() => {
+    //         const timePassed =  Math.floor(Date.now()) - global.timeOfStart;
+    //         // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
+    //         return (timePassed > (waitTimeUntilOnChain*longerTestWaitMultiplier))
+    //     }, 10000, 100);
+    //     const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'transaction');
+    //     // console.log(JSON.stringify(earningOnChain));
+    //     const balanceAddress1 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app1, user1)
+    //     const balanceOnChain1 = await pendingProps.queryState(balanceAddress1, 'balance');
+    //     const balanceAddress2 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app2, user2)
+    //     const balanceOnChain2 = await pendingProps.queryState(balanceAddress2, 'balance');
+    //     const walletBalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", walletAddress)
+    //     const walletBalanceOnChain = await pendingProps.queryState(walletBalanceAddress, 'balance');
+    //     // console.log(`balanceOnChain1=${JSON.stringify(balanceOnChain1)}`);
+    //     // console.log(`balanceOnChain2=${JSON.stringify(balanceOnChain2)}`);
+    //
+    //     const balanceObj1 = balanceOnChain1[0];
+    //     const balanceDetails1 = balanceObj1.balanceDetails;
+    //     const balanceObj2 = balanceOnChain2[0];
+    //     const balanceDetails2 = balanceObj2.balanceDetails;
+    //     const walletBalanceObj = walletBalanceOnChain[0];
+    //     const walletBalanceDetails = walletBalanceObj.balanceDetails;
+    //
+    //
+    //     const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
+    //     // expect earning details to be correct
+    //     expect(earningPropsAmount.div(1e18).toString()).to.be.equal(settlementAmount.toString());
+    //     expect(earningOnChain[0].transaction.userId).to.be.equal(user1);
+    //     expect(earningOnChain[0].transaction.applicationId).to.be.equal(app1);
+    //     expect(earningOnChain[0].transaction.description).to.be.equal('settle1');
+    //     expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.SETTLE);
+    //
+    //     const balancePendingAmount1 = new BigNumber(balanceDetails1.pending, 10);
+    //     const balancePendingAmount2 = new BigNumber(balanceDetails2.pending, 10);
+    //     const balanceTotalPendingAmount1 = new BigNumber(balanceDetails1.totalPending, 10);
+    //     const balanceTotalPendingAmount2 = new BigNumber(balanceDetails2.totalPending, 10);
+    //     const balanceTransferableAmount1 = new BigNumber(balanceDetails1.transferable, 10);
+    //     const balanceTransferableAmount2 = new BigNumber(balanceDetails2.transferable, 10);
+    //     const walletBalancePendingAmount = new BigNumber(walletBalanceDetails.pending, 10);
+    //     const walletBalanceTotalPendingAmount = new BigNumber(walletBalanceDetails.totalPending, 10);
+    //     const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
+    //
+    //     // expect balance details to be correct considering the linked wallet
+    //     expect(balancePendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+    //     expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
+    //     expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+    //     expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+    //     expect(balanceTransferableAmount1.toString()).to.be.equal(balanceAtBlock2.toString());
+    //     expect(balanceTransferableAmount2.toString()).to.be.equal(balanceAtBlock2.toString());
+    //     expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
+    //     expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+    //     expect(walletBalanceTransferableAmount.toString()).to.be.equal(balanceAtBlock2.toString());
+    // });
 
     // TODO - add more test for error scenarios such as replaying the same transaction, last eth block smaller than current, bad signatures, etc.
 

@@ -15,9 +15,12 @@ type TransferDetails struct {
 	TimeStamp         *big.Int					`json:"timestamp"`
 	Address           common.Address			`json:"address"`
 	Balance           *big.Int					`json:"balance"`
+	Amount            *big.Int					`json:"amount"`
+	From              common.Address			`json:"address"`
+	To                common.Address			`json:"address"`
 }
 
-func GetEthTransactionTransferDetails(transactionHash string, address string, client *propstoken.Client) (*TransferDetails, uint64, error) {
+func GetEthTransactionTransferDetails(transactionHash string, address string, client *propstoken.Client, settlement bool) (*TransferDetails, uint64, error) {
 	logging.Get().Infof("GetEthTransactionTransferDetails TransactionHash %s", transactionHash)
 	transaction, err := client.RPC.TransactionReceipt(context.Background(), common.HexToHash(transactionHash))
 	if err != nil {
@@ -30,7 +33,7 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 		if sig == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" { // only if matches Transfer signature keccak256(Transfer(address,address,uint256))
 			from := fmt.Sprintf("0x%v", topics[1].Hex()[26:])
 			to := fmt.Sprintf("0x%v", topics[2].Hex()[26:])
-			if address == from || address == to {
+			if (address == from && !settlement) || address == to {
 
 			} else {
 				return nil, 0, fmt.Errorf("transaction %v address does not match reported balance update address %v, %v do not match %v", transactionHash, from, to, address)
@@ -50,6 +53,9 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 			transferDetails := TransferDetails{
 				Address:        common.HexToAddress(address),
 				Balance: balance,
+				Amount: new(big.Int).SetBytes(log.Data),
+				From: common.HexToAddress(from),
+				To: common.HexToAddress(to),
 			}
 			return &transferDetails, log.BlockNumber, nil
 		}

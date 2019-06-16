@@ -2,40 +2,39 @@ const pendingProps = require('./pending-props');
 const cli = require('caporal');
 const figlet = require('figlet');
 
+// const sigTest = async () => {
+//     const sig = await pendingProps.signMessage(`app1user1`, '0x2d4dcf292bc5bd8d7246099052dfc76b3cdd3524', '759b603832da1100ab47c0f4aa6d445637eb5873d25cadd40484c48970b814d7'); // "signature11";
+//     console.log("sig="+sig);
+//     process.exit(0);
+// }
+// sigTest();
+
 cli
     .version('0.0.1')
-    .command('issue', 'issue an earning to a recipient')
+    .command('issue', 'issue props to a recipient')
     .argument('<application>', 'UDID of an authorized application')
     .argument('<user>', 'UDID of an authorized application user')
     .argument('<amount>', 'amount of props to issue in earning')
-    .argument('<description>', 'reason for this earning (optional)')
+    .argument('[description]', 'reason for this earning (optional)')
     .action(async (args, options, logger) => {
-        logger.info(`issuing earning of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}`);
+        logger.info(`issuing props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}`);
         try {
-            await pendingProps.issue(args.application, args.user, args.amount, args.description ? args.description : '');
+            await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, args.application, args.user, args.amount, args.description ? args.description : '');
         } catch (e) {
             logger.error(`error issuing earning: ${e}`)
         }
     })
-    .command('revoke', 'revoke earning(s) by their state address')
-    .argument('<earnings...>', 'earnings addresses', cli.LIST)
+    .command('revoke', 'revoke props from recipient')
+    .argument('<application>', 'UDID of an authorized application')
+    .argument('<user>', 'UDID of an authorized application user')
+    .argument('<amount>', 'amount of props to issue in earning')
+    .argument('[description]', 'reason for this earning (optional)')
     .action(async (args, options, logger) => {
-        logger.info(`revoking earning(s): ${args.earnings}`);
+        logger.info(`revoking props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}`);
         try {
-            await pendingProps.revoke(args.earnings);
+            await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, args.application, args.user, args.amount, args.description ? args.description : '');
         } catch (e) {
-            logger.error(`error revoking earning(s): ${e}`)
-        }
-    })
-    .command('settle', 'settle some earnings that have been paid on the ethereum chain')
-    .argument('<ethtransactionhash>', 'hash of the ethereum transaction that contains settlement for side chain earning')
-    .argument('<recipient>', 'recipient address')
-    .action(async (args, options, logger) => {
-        logger.info(`settling earning(s) with hash: ${args.ethtransactionhash}`);
-        try {
-            await pendingProps.settle(args.ethtransactionhash, args.recipient);
-        } catch (e) {
-            logger.error(`error settling earning(s): ${e}`)
+            logger.error(`error issuing earning: ${e}`)
         }
     })
     .command('updateLastEthBlockId', 'Update last eth block id for which events were added')
@@ -77,7 +76,7 @@ cli
             logger.error(`error updating external balance: ${e}`)
         }
     })
-    .command('state-query', 'get earning(s) or settlement(s) from the state')
+    .command('state-query', 'get transaction(s) or balance(s) etc. from the state')
     .argument('<stateaddress>', 'state address for query')
     .argument('<t>', 'state type')
     .action(async (args, options, logger) => {

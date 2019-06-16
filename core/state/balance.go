@@ -24,7 +24,9 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 
 	updateBalanceTransactionAddress, _ := BalanceUpdatesTransactionHashAddress(eth_utils.NormalizeAddress(balanceUpdate.GetTxHash()), balanceUpdate.GetPublicAddress())
 	existingTxStateData, err := s.context.GetState([]string{updateBalanceTransactionAddress})
-	if err != nil || len(string(existingTxStateData[updateBalanceTransactionAddress])) == 0 {
+	var settledApplicationUser *pending_props_pb.ApplicationUser
+	var settledAmount *big.Int
+	if err == nil && len(string(existingTxStateData[updateBalanceTransactionAddress])) == 0 {
 		logger.Infof(fmt.Sprintf("Error / Not Found while getting state updateBalanceTransactionAddress %v, %v", updateBalanceTransactionAddress, err))
 		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"));
 		if err != nil {
@@ -42,7 +44,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 		if latestBlockId.Cmp(big.NewInt(0).Add(confirmationBlocks, big.NewInt(balanceUpdate.GetBlockId()))) >= 0 {
 			logger.Infof("Enough blocks (%v) passed submitted=%v,current=%v", confirmationBlocks, balanceUpdate.GetBlockId(), latestBlockId)
 			// check details are correct looking up the transaction transfer details
-			_transferDetails, transferBlockId, err := eth_utils.GetEthTransactionTransferDetails(eth_utils.NormalizeAddress(balanceUpdate.GetTxHash()), eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()), token)
+			_transferDetails, transferBlockId, err := eth_utils.GetEthTransactionTransferDetails(eth_utils.NormalizeAddress(balanceUpdate.GetTxHash()), eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()), token, false)
 			if err == nil && transferBlockId > 0 {
 				tdAddress := eth_utils.NormalizeAddress(_transferDetails.Address.String())
 				tdBalance := _transferDetails.Balance
@@ -60,6 +62,75 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 					logger.Infof("TransferDetails (%v) are different than submitted data (%v) - transferBlockId=%v", string(tdBytes) , balanceUpdate, transferBlockId)
 					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("TransferDetails (%v) are different than submitted data (%v)", _transferDetails, balanceUpdate)}
 				}
+
+				// is the transfer from a settlement address?
+				settlementFromAddresses := viper.GetStringMapString("settlement_from_addresses")
+				if transferFromAppId, ok := settlementFromAddresses[eth_utils.NormalizeAddress(_transferDetails.From.String())]; ok {
+					// does the transfer to address linked to any user?
+					walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: eth_utils.NormalizeAddress(_transferDetails.To.String())})
+					state1, err := s.context.GetState([]string{walletLinkAddress})
+					var walletToUserData pending_props_pb.WalletToUser
+					if err == nil && len(string(state1[walletLinkAddress])) > 0 {
+						for _, value := range state1 {
+							err := proto.Unmarshal(value, &walletToUserData)
+							if err != nil {
+								return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal wallet link proto data (%s)", err)}
+							}
+						}
+						applicationUsers := walletToUserData.GetUsers()
+						for _, applicationUser := range applicationUsers {
+							// element is the element from someSlice for where we are
+							if applicationUser.GetApplicationId() == transferFromAppId {
+								settledApplicationUser = applicationUser
+								settledAmount = _transferDetails.Amount
+								transaction := pending_props_pb.Transaction{
+									Type: pending_props_pb.Method_SETTLE,
+									UserId: applicationUser.GetUserId(),
+									ApplicationId: applicationUser.GetApplicationId(),
+									Timestamp: balanceUpdate.GetTimestamp(),
+									Amount: settledAmount.String(),
+									Description: "Settlement",
+									TxHash: balanceUpdate.GetTxHash(),
+									Wallet: eth_utils.NormalizeAddress(_transferDetails.To.String()),
+								}
+								transactionAddress, _ := TransactionAddress(transaction)
+								b, err := proto.Marshal(&transaction)
+								if err != nil {
+									return &processor.InvalidTransactionError{Msg: "could not marshal transaction proto"}
+								}
+								updates[transactionAddress] = b
+								receiptBytes, err := json.Marshal(GetTransactionReceipt(transaction.GetType().String(), transactionAddress, transaction.GetUserId(), transaction.GetApplicationId(), *settledAmount))
+								if err != nil {
+									logger.Infof("unable to create new transaction receipt (%s)", err)
+								}
+
+								err = s.context.AddReceiptData(receiptBytes)
+								if err != nil {
+									logger.Infof("unable to create new transaction receipt (%s)", err)
+								}
+
+								e := pending_props_pb.TransactionEvent{
+									Transaction: &transaction,
+									Type: transaction.GetType(),
+									StateAddress: transactionAddress,
+									Message: fmt.Sprintf("transaction added: %s", transactionAddress),
+									Description: transaction.GetDescription(),
+								}
+								attr := []processor.Attribute{
+									processor.Attribute{"recipient", transaction.GetUserId()},
+									processor.Attribute{"application", transaction.GetApplicationId()},
+									processor.Attribute{"event_type", pending_props_pb.EventType_TransactionAdded.String()},
+									processor.Attribute{"transaction_type", transaction.GetType().String()},
+									processor.Attribute{"description", transaction.GetDescription()},
+								}
+								s.AddEvent(e, "pending-props:transaction", attr...)
+
+							}
+						}
+					}
+
+				}
+
 				// it's all good we can save the data now
 
 			} else {
@@ -110,7 +181,13 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 			}
 		}
 		balanceWallet.BalanceDetails.Transferable = balanceUpdate.GetOnchainBalance()
-
+		if settledAmount != nil {
+			totalPending, ok := new(big.Int).SetString(balanceWallet.GetBalanceDetails().GetTotalPending(), 10)
+			if !ok {
+				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could convert balanceWallet.GetBalanceDetails().GetTotalPending() to big.Int (%s)", balanceWallet.GetBalanceDetails().GetTotalPending())}
+			}
+			balanceWallet.BalanceDetails.TotalPending = totalPending.Sub(totalPending, settledAmount).String()
+		}
 		balanceWallet.BalanceDetails.Timestamp = newBalanceDetails.GetTimestamp()
 		balanceWallet.BalanceDetails.LastEthBlockId = balanceUpdate.GetBlockId()
 		balanceWallet.BalanceDetails.LastUpdateType = pending_props_pb.UpdateType_PROPS_BALANCE
@@ -137,14 +214,14 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 		applicationUsers = walletToUserData.GetUsers()
 	}
 
-	err2 := s.UpdateLinkedWalletBalances(applicationUsers, balanceWallet, true, updates)
+	err2 := s.UpdateLinkedWalletBalances(applicationUsers, balanceWallet, true, updates, settledApplicationUser, settledAmount)
 	if err2 != nil {
 		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not save balances (%s)", err2)}
 	}
 	return nil
 }
 
-func (s *State) UpdateBalanceFromEarningsChange(userId, applicationId string, amount big.Int, timestamp int64, updates map[string][]byte) error {
+func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amount big.Int, timestamp int64, updates map[string][]byte) error {
 	//1. get current balance
 	//2. update current balance
 
@@ -167,6 +244,7 @@ func (s *State) UpdateBalanceFromEarningsChange(userId, applicationId string, am
 	}
 
 	balanceAddressUser, _ := BalanceAddress(newBalanceUser)
+	logger.Infof("BalanceAddress = %v", balanceAddressUser)
 	state, err := s.context.GetState([]string{balanceAddressUser})
 	var balanceUser pending_props_pb.Balance
 	if err != nil || len(string(state[balanceAddressUser])) == 0{
@@ -239,7 +317,7 @@ func (s *State) UpdateBalanceFromEarningsChange(userId, applicationId string, am
 	} else {
 		applicationUsers = append(applicationUsers, &pending_props_pb.ApplicationUser{ ApplicationId: balanceUser.GetApplicationId(), UserId: balanceUser.GetUserId()})
 	}
-	err1 := s.UpdateLinkedWalletBalances(applicationUsers, balanceUser, false, updates)
+	err1 := s.UpdateLinkedWalletBalances(applicationUsers, balanceUser, false, updates, nil, nil)
 	if err1 != nil {
 		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not save balances (%s)", err1)}
 	}
@@ -275,10 +353,7 @@ func (s *State) UpdateBalance(balance pending_props_pb.Balance, updates map[stri
 
 func (s * State) GetBalanceByApplicationUser(applicationUser pending_props_pb.ApplicationUser) (string, *pending_props_pb.Balance, bool, error) {
 	var newBalanceCreated bool = false
-	balanceAddress, _ := BalanceAddress(pending_props_pb.Balance{
-		UserId:        applicationUser.GetUserId(),
-		ApplicationId: applicationUser.GetApplicationId(),
-	})
+	balanceAddress, _ := BalanceAddressByAppUser(applicationUser.GetApplicationId(), applicationUser.GetUserId())
 	state, err := s.context.GetState([]string{balanceAddress})
 	var balance pending_props_pb.Balance
 	if err != nil || len(string(state[balanceAddress])) == 0 {

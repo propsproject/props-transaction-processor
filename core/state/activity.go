@@ -22,8 +22,11 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 	lastEthBlockData, err := s.GetLastEthBlockData()
 
 	if err != nil {
-		logger.Infof("Unable to get the last eth block data")
-		return nil
+		logger.Infof("Unable to get the last eth block data will use 0...")
+		lastEthBlockData = &pending_props_pb.LastEthBlock{
+			Id: 0,
+			Timestamp:0,
+		}
 	}
 
 	var bufferTimeSec int64 = 180
@@ -55,10 +58,10 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 		if len(string(activityData[activityAddress])) == 0 {
 			b, err := proto.Marshal(&activity)
 			if err != nil {
-				return &processor.InvalidTransactionError{Msg: "could not marshal earning proto"}
+				return &processor.InvalidTransactionError{Msg: "could not marshal activity proto"}
 			}
 
-			if blockDate == activity.Date || blockDateBuffer == activity.Date {
+			if blockDate == activity.Date || blockDateBuffer == activity.Date || lastEthBlockData.GetTimestamp() == 0 {
 				stateUpdate[activityAddress] = b
 			} else {
 				logger.Infof("Can't log activityDate=%v while current date is ", activity.Date, blockDate)

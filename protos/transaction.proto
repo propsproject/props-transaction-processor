@@ -1,0 +1,15 @@
+syntax = "proto3";
+package pending_props_pb;
+import "payload.proto";
+
+
+message Transaction {
+    Method type = 1;
+    string user_id = 2;
+    string application_id = 3;
+    int64 timestamp = 4;
+    string amount = 5; // big.Int
+    string description = 6;
+    string tx_hash = 7; // applicable for SETTLE only
+    string wallet = 8; // applicable for SETTLE only
+}

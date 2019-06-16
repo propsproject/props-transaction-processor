@@ -1,8 +1,9 @@
 syntax = "proto3";
 package pending_props_pb;
-import "earning.proto";
+import "payload.proto";
 import "balance.proto";
 import "users.proto";
+import "transaction.proto";
 
 enum EventType {
     EarningIssued = 0;
@@ -12,15 +13,15 @@ enum EventType {
     LastEthBlockUpdated = 4;
     WalletLinked = 5;
     WalletUnlinked = 6;
+    TransactionAdded = 7;
 }
 
-message EarningEvent {
-    Earning earning = 1;
-    string issueAddress = 2;
-    string revokeAddress = 3;
-    string settleAddress = 4;
-    string message = 5;
-    string description = 6;
+message TransactionEvent {
+    Transaction transaction = 1;
+    Method type = 2;
+    string stateAddress = 3;
+    string message = 4;
+    string description = 5;
 }
 
 message BalanceEvent {

@@ -20,7 +20,7 @@ const colors = require('colors');
 const proto = require('google-protobuf');
 const any = require('google-protobuf/google/protobuf/any_pb.js');
 const payloads_pb = require('./proto/payload_pb');
-const earnings_pb = require('./proto/earning_pb');
+const transaction_pb = require('./proto/transaction_pb');
 const balance_pb = require('./proto/balance_pb');
 const activity_pb = require('./proto/activity_pb');
 const users_pb = require('./proto/users_pb');
@@ -35,6 +35,11 @@ const BigNumber = require('bignumber.js');
 BigNumber.config({ EXPONENTIAL_AT: 1e+9 })
 const restAPIHost = process.env.REST_API_URL != undefined ? process.env.REST_API_URL : 'http://127.0.0.1:8008';
 
+const transactionTypes = {
+    ISSUE: payloads_pb.Method.ISSUE,
+    REVOKE: payloads_pb.Method.REVOKE,
+    SETTLE: payloads_pb.Method.SETTLE
+}
 // hard coded example private key
 // const pk = Buffer.from("196749ed808372060eaeffe10e56de82a48829fcf52199847e1e1db4b780ced0", 'hex');
 const pk = Buffer.from("fd899d64b5209b53e6b6380dbe195500d988b2184d3a7076681370d5d1c58408", 'hex');
@@ -85,24 +90,16 @@ const CONFIG = {
         familyVersion: "1.0",
         namespaces: {
             prefixes: {
-                "pending": createHash('sha512')
-                    .update("pending-props:earnings:pending")
-                    .digest('hex')
-                    .substring(0, 6),
-                "revoked": createHash('sha512')
-                    .update("pending-props:earnings:revoked")
-                    .digest('hex')
-                    .substring(0, 6),
-                "settled": createHash('sha512')
-                    .update("pending-props:earnings:settled")
-                    .digest('hex')
-                    .substring(0, 6),
                 "settlements": createHash('sha512')
                     .update("pending-props:earnings:settlements")
                     .digest('hex')
                     .substring(0, 6),
                 "balance": createHash('sha512')
                     .update("pending-props:earnings:balance")
+                    .digest('hex')
+                    .substring(0, 6),
+                "transaction": createHash('sha512')
+                    .update("pending-props:earnings:transaction")
                     .digest('hex')
                     .substring(0, 6),
                 "balanceUpdate": createHash('sha512')
@@ -122,20 +119,6 @@ const CONFIG = {
                     .digest('hex')
                     .substring(0,6),
             },
-            earningAddress(status, args) {
-                const prefix = this.prefixes[status];
-                let address = prefix;
-                args.forEach(a => {
-                    address = address.concat(createHash('sha512').update(`${a.data}`).digest('hex').substring(a.start, a.end));
-                });
-                // const recID =
-                // createHash('sha512').update(recipient).digest('hex').substring(0, 4); const
-                // appID = createHash('sha512').update(application).digest('hex').substring(0,
-                // 4); const postfix =
-                // createHash('sha512').update(`${recipient}${application}${signature}`).digest('
-                // hex').toLowerCase().substring(0, 56);
-                return address
-            },
             settlementAddress(ethereumTxtHash) {
                 const prefix = this.prefixes.settlements;
                 const postfix = createHash('sha512')
@@ -144,6 +127,30 @@ const CONFIG = {
                     .toLowerCase()
                     .substring(0, 64);
                 return `${prefix}${postfix}`
+            },
+            transactionAddress(type, applicationId, userId, timestamp) {
+                const prefix = this.prefixes.transaction
+                const part1 = createHash('sha512')
+                    .update(`${type}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 2);
+                const part2 = createHash('sha512')
+                    .update(`${applicationId}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 10);
+                const part3 = createHash('sha512')
+                    .update(`${userId}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 42);
+                const part4 = createHash('sha512')
+                    .update(`${timestamp}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 10);
+                return `${prefix}${part1}${part2}${part3}${part4}`
             },
             balanceAddress(applicationId, userId) {
                 const prefix = this.prefixes.balance;
@@ -217,6 +224,8 @@ const CONFIG = {
     }
 };
 
+console.log(JSON.stringify(CONFIG.earnings.namespaces));
+
 const newRPCRequest = (params, method) => {
     const reqParams = new payloads_pb.Params();
     reqParams.setData(params);
@@ -227,26 +236,10 @@ const newRPCRequest = (params, method) => {
     return payload;
 };
 
-const newEarningsDetails = (amount, applicationId, userId, description = '') => {
-    const details = new earnings_pb.EarningDetails();
-    details.setTimestamp(moment().unix());
-    details.setUserId(userId);
-    details.setApplicationId(applicationId);
-    details.setDescription(description);
-    BigNumber.config({ EXPONENTIAL_AT: 1e+9 });
-    const propsAmount = new BigNumber(amount, 10);
-    const tokensAmount = propsAmount.times(1e18);
-    const zero = new BigNumber(0, 10);
-    details.setAmountEarned(tokensAmount.toString());
-    details.setAmountSettled(zero.toString());
-
-    return details;
-};
-
-const externalBalanceUpdate = async (address, balance, ethTransactionHash, blockId, timestamp) => {
+const externalBalanceUpdate = async (address, balance, ethTransactionHash, blockId, timestamp, addresses = {}) => {
     address = normalizeAddress(address);
     const txHash = normalizeAddress(ethTransactionHash);
-    const balanceUpdate = new earnings_pb.BalanceUpdate();
+    const balanceUpdate = new balance_pb.BalanceUpdate();
     balanceUpdate.setPublicAddress(address);
     balanceUpdate.setOnchainBalance(balance);
     balanceUpdate.setTxHash(txHash);
@@ -288,6 +281,13 @@ const externalBalanceUpdate = async (address, balance, ethTransactionHash, block
             if (linkedBalanceAddress != balanceAddress) {
                 linkedApplicationUserAddresses.push(linkedBalanceAddress);
             }
+            // include the settle transaction address in case this transfer it a settlement
+            const transactionAddress = CONFIG
+                .earnings
+                .namespaces
+                .transactionAddress(transactionTypes.SETTLE, linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId, timestamp)
+            linkedApplicationUserAddresses.push(transactionAddress);
+            addresses['stateAddress'] = transactionAddress;
         }
         log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
     }
@@ -424,47 +424,34 @@ const linkWallet = async (address, applicationId, userId, signature) => {
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 
-const issue = async (applicationId, userId, amount, description = '', addresses = {}) => {
-    //setup details
-    const details = newEarningsDetails(amount, applicationId, userId, description);
-    const hashToSign = createHash('sha512')
-        .update(details.serializeBinary())
-        .digest('hex')
-        .toLowerCase()
+const transaction = async (transactionType, applicationId, userId, amount, description = '', addresses = {}) => {
 
-    const earningsSignature = signer.sign(Buffer.from(hashToSign));
 
-    const earning = new earnings_pb.Earning();
-    earning.setDetails(details);
-    earning.setSignature(earningsSignature);
+    const transactionData = new transaction_pb.Transaction();
+    const timestamp = moment().unix();
+    transactionData.setType(transactionType);
+    transactionData.setTimestamp(timestamp);
+    transactionData.setApplicationId(applicationId);
+    transactionData.setUserId(userId);
+    const propsAmount = new BigNumber(amount, 10);
+    const tokensAmount = propsAmount.times(1e18);
+    transactionData.setAmount(tokensAmount.toString());
+    transactionData.setDescription(description);
 
+    // console.log('transactionData:',transactionType, timestamp, applicationId, userId);
     //setup RPC request
     const params = new any.Any();
-    params.setValue(earning.serializeBinary());
-    params.setTypeUrl('github.com/propsproject/pending-props/protos/pending_props_pb.Earning');
+    params.setValue(transactionData.serializeBinary());
+    params.setTypeUrl('github.com/propsproject/pending-props/protos/pending_props_pb.Transaction');
 
-    const request = newRPCRequest(params, payloads_pb.Method.ISSUE);
+    const request = newRPCRequest(params, transactionType);
     const requestBytes = request.serializeBinary();
-
-    const addressArgs = [{
-        data: details.getApplicationId(),
-        start: 0,
-        end: 4
-    }, {
-        data: details.getUserId(),
-        start: 0,
-        end: 4
-    }, {
-        data: `${applicationId}${userId}${earningsSignature}`,
-        start: 0,
-        end: 56
-    }];
 
     // compute state address
     const stateAddress = CONFIG
         .earnings
         .namespaces
-        .earningAddress("pending", addressArgs);
+        .transactionAddress(transactionType, applicationId, userId, timestamp);
 
     // compute balance and balaneTimestamp addresses for outputs
     const balanceAddress = CONFIG
@@ -504,7 +491,7 @@ const issue = async (applicationId, userId, amount, description = '', addresses 
         }
     }
     log(JSON.stringify(linkedApplicationUserAddresses));
-    log("Earnings (pending) Address = "+stateAddress);
+    log("Transaction Address = "+stateAddress);
     log("Balance Address = "+balanceAddress);
     const inputs = [stateAddress, balanceAddress, ...linkedApplicationUserAddresses];
     const outputs = [stateAddress, balanceAddress, ...linkedApplicationUserAddresses];
@@ -540,12 +527,11 @@ const issue = async (applicationId, userId, amount, description = '', addresses 
         })
         .finish();
 
-    log(`state addresses: ${stateAddress}`);
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 
 const updateLastBlockId = async (blockId) => {
-    const blockUpdate = new earnings_pb.LastEthBlock();
+    const blockUpdate = new payloads_pb.LastEthBlock();
     blockUpdate.setId(blockId);
     //setup RPC request
     const params = new any.Any();
@@ -595,182 +581,6 @@ const updateLastBlockId = async (blockId) => {
         .finish();
 
     // console.log(colors.yellow(`balance state addresses: recipientBalanceAddress:${recipientBalanceAddress} fromBalanceAddress:${fromBalanceAddress} ${balanceTimestampAddressPrefix}`));
-    return await submitTransaction(transactionHeaderBytes, requestBytes);
-};
-
-// settle can only be updated to new schema once wallet linking exists and will require a read before write
-const settle = async (transactionHash, recipient) => {
-    return true; // TODO settle requires app address look up to appId will deal with it when dealing with settlements
-    recipient = normalizeAddress(recipient);
-    transactionHash = normalizeAddress(transactionHash);
-    const appAddr = normalizeAddress(ethUtil.pubToAddress(signer.getPublicKey().asBytes(), true).toString('hex'));
-    const pendingAddresses = await getPendingEarningsAddress(recipient, appAddr);
-
-    const settleAddresses = [];
-    pendingAddresses.forEach(address => {
-        settleAddresses.push(`${CONFIG.earnings.namespaces.prefixes.settled}${address.substring(6)}`);
-    });
-
-    const settlementAddress = CONFIG
-        .earnings
-        .namespaces
-        .settlementAddress(transactionHash);
-    //setup RPC request
-    const paramData = JSON.stringify({
-        "eth_transaction_hash": transactionHash,
-        recipient: recipient,
-        "pending_addresses": pendingAddresses,
-        "timestamp": moment().unix()
-    });
-    const params = new any.Any();
-    params.setValue(Buffer.from(paramData));
-    const request = newRPCRequest(params, payloads_pb.Method.SETTLE);
-    const requestBytes = request.serializeBinary();
-
-    //compute balance and balaneTimestamp addresses for outputs
-    const balanceAddress = CONFIG
-        .earnings
-        .namespaces
-        .balanceAddress(recipient);
-
-    log("Balance Address = "+balanceAddress);
-
-    let inputs,
-        outputs;
-    inputs = outputs = [
-        balanceAddress, settlementAddress, ...pendingAddresses,
-        ...settleAddresses
-    ];
-    // do the sawtooth thang ;)
-    const transactionHeaderBytes = protobuf
-        .TransactionHeader
-        .encode({
-            familyName: CONFIG.earnings.familyName,
-            familyVersion: CONFIG.earnings.familyVersion,
-            inputs: inputs,
-            outputs: outputs,
-            signerPublicKey: signer
-                .getPublicKey()
-                .asHex(),
-            // In this example, we're signing the batch with the same private key, but the
-            // batch can be signed by another party, in which case, the public key will need
-            // to be associated with that key.
-            batcherPublicKey: signer
-                .getPublicKey()
-                .asHex(),
-            // In this example, there are no dependencies.  This list should include an
-            // previous transaction header signatures that must be applied for this
-            // transaction to successfully commit. For example, dependencies:
-            // ['540a6803971d1880ec73a96cb97815a95d374cbad5d865925e5aa0432fcf1931539afe10310c
-            // 122c5eaae15df61236079abbf4f258889359c4d175516934484a'],
-            dependencies: [],
-            payloadSha512: createHash('sha512')
-                .update(requestBytes)
-                .digest('hex')
-        })
-        .finish();
-    return await submitTransaction(transactionHeaderBytes, requestBytes);
-};
-
-const revoke = async (addresses, revokeAddress = {}) => {
-    //setup RPC request
-    log(`debug:: addresses ${JSON.stringify(addresses)}`);
-    const paramData = JSON.stringify({
-        addresses: addresses,
-        timestamp: moment().unix()
-    });
-    const params = new any.Any();
-    params.setValue(Buffer.from(paramData));
-    const request = newRPCRequest(params, payloads_pb.Method.REVOKE);
-    const requestBytes = request.serializeBinary();
-
-    const revokeAddresses = [];
-    const linkedApplicationUserAddresses = [];
-    let recipientsAddresses = [];
-    for (const address of addresses) {
-        revokeAddresses.push(`${CONFIG.earnings.namespaces.prefixes.revoked}${address.substring(6)}`);
-        recipientsAddresses = recipientsAddresses.concat(await getRecipientFromStateAddress(address));
-    }
-    //compute balance and balaneTimestamp addresses for outputs
-    const balanceAddresses = [];
-    for (let i = 0; i < recipientsAddresses.length; i = i + 1)
-    {
-        const recipient = recipientsAddresses[i];
-        const balanceAddress = CONFIG
-            .earnings
-            .namespaces
-            .balanceAddress(recipient.applicationId, recipient.userId)
-        balanceAddresses.push(balanceAddress);
-
-        // check if user balance is linked to a wallet
-        const balance = await getLinkedWalletFromBalanceAddress(balanceAddress);
-        const linkedWalletAddress = (balance[0]===undefined || !('linkedWallet' in balance[0])) ? "" : balance[0].linkedWallet;
-        if (linkedWalletAddress.length > 0) {
-            const walletLinkAddress = CONFIG
-                .earnings
-                .namespaces
-                .walletLinkAddress(linkedWalletAddress);
-
-            const walletBalanceAddress = CONFIG
-                .earnings
-                .namespaces
-                .balanceAddress("", linkedWalletAddress);
-            const linkedApplicationUsers = await getLinkedUsersFromWalletLinkAddress(walletLinkAddress);
-            linkedApplicationUserAddresses.push(walletLinkAddress);
-            linkedApplicationUserAddresses.push(walletBalanceAddress);
-            log(`linkedApplicationUsers ${JSON.stringify(linkedApplicationUsers)}`);
-            if (linkedApplicationUsers.length > 0) {
-                for (let i = 0; i < linkedApplicationUsers[0].usersList.length; ++i) {
-                    const linkedBalanceAddress = CONFIG
-                        .earnings
-                        .namespaces
-                        .balanceAddress(linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
-                    if (linkedBalanceAddress != balanceAddress) {
-                        linkedApplicationUserAddresses.push(linkedBalanceAddress);
-                    }
-                }
-                log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
-            }
-        }
-    }
-
-    log(JSON.stringify(linkedApplicationUserAddresses));
-    const inputs = [...balanceAddresses, ...addresses, ...revokeAddresses, ...linkedApplicationUserAddresses];
-    const outputs = [...balanceAddresses, ...addresses, ...revokeAddresses, ...linkedApplicationUserAddresses];
-    revokeAddress['balanceAddresses'] = balanceAddresses;
-    revokeAddress['addresses'] = addresses;
-    revokeAddress['revokeAddresses'] = revokeAddresses;
-    revokeAddress['linkedApplicationUserAddresses'] = linkedApplicationUserAddresses;
-
-    // do the sawtooth thang ;)
-    const transactionHeaderBytes = protobuf
-        .TransactionHeader
-        .encode({
-            familyName: CONFIG.earnings.familyName,
-            familyVersion: CONFIG.earnings.familyVersion,
-            inputs: inputs,
-            outputs: outputs,
-            signerPublicKey: signer
-                .getPublicKey()
-                .asHex(),
-            // In this example, we're signing the batch with the same private key, but the
-            // batch can be signed by another party, in which case, the public key will need
-            // to be associated with that key.
-            batcherPublicKey: signer
-                .getPublicKey()
-                .asHex(),
-            // In this example, there are no dependencies.  This list should include an
-            // previous transaction header signatures that must be applied for this
-            // transaction to successfully commit. For example, dependencies:
-            // ['540a6803971d1880ec73a96cb97815a95d374cbad5d865925e5aa0432fcf1931539afe10310c
-            // 122c5eaae15df61236079abbf4f258889359c4d175516934484a'],
-            dependencies: [],
-            payloadSha512: createHash('sha512')
-                .update(requestBytes)
-                .digest('hex')
-        })
-        .finish();
-
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 
@@ -836,25 +646,6 @@ const submitTransaction = async (transactionHeaderBytes, requestBytes) => {
     }
 };
 
-const getRecipientFromStateAddress = async (address) => {
-    try {
-        const reqConfig = {
-            method: 'GET',
-            url: `${restAPIHost}/state?address=${address}`,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        };
-
-        const response = await axios(reqConfig);
-        const data = response.data.data;
-
-        return deserializeEarnings(data);
-    } catch (e) {
-        throw e;
-    }
-}
-
 const getLinkedUsersFromWalletLinkAddress = async (address) => {
     try {
         const reqConfig = {
@@ -907,10 +698,8 @@ const queryState = async (address, t) => {
         const response = await axios(reqConfig);
         const data = response.data.data;
 
-        if (t === "earning") {
-            return deserializeEarnings(data);
-        } else if (t === "settlement") {
-            return deserializeSettlements(data);
+        if (t === "transaction") {
+            return deserializeTransactions(data);
         } else if (t === "balance") {
             return deserializeBalance(data);
         } else if (t === "lastblockid") {
@@ -929,38 +718,25 @@ const queryState = async (address, t) => {
     }
 };
 
-const deserializeEarnings = (data) => {
+const deserializeTransactions = (data) => {
     const recipients = []
     data.forEach(entry => {
         const bytes = new Uint8Array(Buffer.from(entry.data, 'base64'));
-        const earning = new earnings_pb
-            .Earning
+        const transaction = new transaction_pb
+            .Transaction
             .deserializeBinary(bytes);
 
         const output = {
             'state-address': entry.address,
-            'earning-data': earning.toObject(),
+            'transaction-data': transaction.toObject(),
             'human-readable': {
-                timestamp: moment(new Date(earning.getDetails().getTimestamp() * 1000)).format('L'),
-                status: Object
-                    .keys(earnings_pb.Status)
-                    .filter((k, i) => i === earning.getDetails().getStatus())
+                timestamp: moment(new Date(transaction.getTimestamp() * 1000)).format('L'),
             }
         };
         log(prettyjson.render(output));
-        recipients.push({ applicationId: earning.getDetails().getApplicationId(), userId: earning.getDetails().getUserId(), earning:earning.toObject()})
+        recipients.push({ applicationId: transaction.getApplicationId(), userId: transaction.getUserId(), transaction:transaction.toObject()})
     });
     return recipients
-};
-
-const deserializeSettlements = (data) => {
-    data.forEach(entry => {
-        const bytes = new Uint8Array(Buffer.from(entry.data, 'base64'));
-        const settlement = new earnings_pb
-            .Settlements
-            .deserializeBinary(bytes);
-        log(prettyjson.render(settlement.toObject()));
-    });
 };
 
 const deserializeBalance = (data) => {
@@ -993,7 +769,7 @@ const deserializeLastEthBlockId = (data) => {
     const retData = []
     data.forEach(entry => {
         const bytes = new Uint8Array(Buffer.from(entry.data, 'base64'));
-        const lastBlock = new earnings_pb
+        const lastBlock = new payloads_pb
             .LastEthBlock
             .deserializeBinary(bytes);
         retData.push(lastBlock.toObject());
@@ -1079,39 +855,6 @@ const logActivity = async(userId, appId, timestamp, date) => {
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 }
 
-const getPendingEarningsAddress = async (recipient, owner) => {
-    recipient = normalizeAddress(recipient);
-    owner = normalizeAddress(owner);
-    try {
-        const addressArgs = [{
-            data: recipient,
-            start: 0,
-            end: 4
-        }, {
-            data: owner,
-            start: 0,
-            end: 4
-        }];
-
-        //compute state address
-        const queryAddress = CONFIG
-            .earnings
-            .namespaces
-            .earningAddress("pending", addressArgs);
-        const reqConfig = {
-            method: 'GET',
-            url: `${restAPIHost}/state?address=${queryAddress}`,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        };
-        const response = await axios(reqConfig);
-        const data = response.data.data;
-        return data.map(d => d.address);
-    } catch (e) {
-        throw e;
-    }
-};
 
 const normalizeAddress = (str) => {
     if (str.length > 0) {
@@ -1139,9 +882,7 @@ const padWithZeros = (address) => {
 };
 
 module.exports = {
-    issue,
-    revoke,
-    settle,
+    transaction,
     externalBalanceUpdate,
     queryState,
     updateLastBlockId,
@@ -1151,6 +892,7 @@ module.exports = {
     setLoggerType,
     signMessage,
     recoverFromSignature,
+    transactionTypes,
 };
 
 // const secp256k1 = require('secp256k1');
