@@ -96,19 +96,22 @@ func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) e
 						stateUpdate,
 						existingLinkedApplicationUser.GetUserId() != walletToUser.GetUsers()[0].GetUserId())
 
-					walletUnlinkedEvent := pending_props_pb.WalletUnlinkedEvent{
-						User: existingLinkedApplicationUser,
-						WalletToUsers: &walletToUserData,
-						Message: fmt.Sprintf("wallet address %v unlinked from application user %v", walletToUser.GetAddress(),  existingLinkedApplicationUser),
+
+					if existingLinkedApplicationUser.GetUserId() != walletToUser.GetUsers()[0].GetUserId() {
+						walletUnlinkedEvent := pending_props_pb.WalletUnlinkedEvent{
+							User:          existingLinkedApplicationUser,
+							WalletToUsers: &walletToUserData,
+							Message:       fmt.Sprintf("wallet address %v unlinked from application user %v", walletToUser.GetAddress(), existingLinkedApplicationUser),
+						}
+						walletUnlinkAttr := []processor.Attribute{
+							processor.Attribute{"address", walletToUser.GetAddress()},
+							processor.Attribute{"recipient", existingLinkedApplicationUser.GetUserId()},
+							processor.Attribute{"application", existingLinkedApplicationUser.GetApplicationId()},
+							processor.Attribute{"event_type", pending_props_pb.EventType_WalletUnlinked.String()},
+							processor.Attribute{"signature", existingLinkedApplicationUser.GetSignature()},
+						}
+						s.AddWalletUnlinkEvent(walletUnlinkedEvent, "pending-props:walletl", walletUnlinkAttr...)
 					}
-					walletUnlinkAttr := []processor.Attribute{
-						processor.Attribute{"address", walletToUser.GetAddress()},
-						processor.Attribute{"recipient",  existingLinkedApplicationUser.GetUserId()},
-						processor.Attribute{"application",  existingLinkedApplicationUser.GetApplicationId()},
-						processor.Attribute{"event_type", pending_props_pb.EventType_WalletUnlinked.String()},
-						processor.Attribute{"signature", existingLinkedApplicationUser.GetSignature()},
-					}
-					s.AddWalletUnlinkEvent(walletUnlinkedEvent, "pending-props:walletl", walletUnlinkAttr...)
 				}
 			} else {
 				currentLinkedApplicationUsers = append(currentLinkedApplicationUsers, existingLinkedApplicationUser)
