@@ -8,5 +8,6 @@
   "worker-queue": 100,
   "threads": 0,
   "props_token_contract_address": "",
-  "confirmation-blocks": 15
+  "confirmation-blocks": 15,
+  "seconds_in_day": 86400
 }

@@ -40,7 +40,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
 		logger.Infof("Latest Block on main-chain is %v", latestBlockId.String())
-		confirmationBlocks := big.NewInt(viper.GetInt64(" ethereum_confirmation_blocks"))
+		confirmationBlocks := big.NewInt(viper.GetInt64("ethereum_confirmation_blocks"))
 		if latestBlockId.Cmp(big.NewInt(0).Add(confirmationBlocks, big.NewInt(balanceUpdate.GetBlockId()))) >= 0 {
 			logger.Infof("Enough blocks (%v) passed submitted=%v,current=%v", confirmationBlocks, balanceUpdate.GetBlockId(), latestBlockId)
 			// check details are correct looking up the transaction transfer details
@@ -162,6 +162,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	newBalanceWallet := pending_props_pb.Balance{
 		UserId:                 eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()),
 		BalanceDetails:         &newBalanceDetails,
+		PreCutoffDetails:       &newBalanceDetails,
 		Type:          pending_props_pb.BalanceType_WALLET,
 	}
 
@@ -180,6 +181,12 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal proto data (%s)", err)}
 			}
 		}
+		// if the new balance timestamp day is bigger than current one, store current in PreCutOff one
+		if balanceWallet.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(newBalanceDetails.GetTimestamp()) > CalculateRewardsDay(balanceWallet.GetBalanceDetails().GetTimestamp()) {
+			logger.Infof("Updating PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
+				newBalanceDetails.GetTimestamp(), balanceWallet.GetBalanceDetails().GetTimestamp(), balanceWallet.GetPreCutoffDetails().GetTimestamp())
+			balanceWallet.PreCutoffDetails = balanceWallet.GetBalanceDetails()
+		}
 		balanceWallet.BalanceDetails.Transferable = balanceUpdate.GetOnchainBalance()
 		if settledAmount != nil {
 			totalPending, ok := new(big.Int).SetString(balanceWallet.GetBalanceDetails().GetTotalPending(), 10)
@@ -191,8 +198,13 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 		balanceWallet.BalanceDetails.Timestamp = newBalanceDetails.GetTimestamp()
 		balanceWallet.BalanceDetails.LastEthBlockId = balanceUpdate.GetBlockId()
 		balanceWallet.BalanceDetails.LastUpdateType = pending_props_pb.UpdateType_PROPS_BALANCE
+
 		logger.Infof("Update recipient balance will be %v,%v", balanceWallet.BalanceDetails.Pending, balanceWallet.BalanceDetails.TotalPending)
 	}
+
+
+	logger.Infof("Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
+		newBalanceDetails.GetTimestamp(), balanceWallet.GetBalanceDetails().GetTimestamp(), balanceWallet.GetPreCutoffDetails().GetTimestamp())
 	// save balance wallet
 	s.UpdateBalance(balanceWallet, updates, true)
 	// check if it's linked to a wallet with more users and update them as needed
@@ -261,6 +273,13 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal proto data (%s)", err)}
 			}
 		}
+
+		if balanceUser.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(newBalanceDetails.GetTimestamp()) > CalculateRewardsDay(balanceUser.GetBalanceDetails().GetTimestamp()) {
+			logger.Infof("Updating PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
+				newBalanceDetails.GetTimestamp(), balanceUser.GetBalanceDetails().GetTimestamp(), balanceUser.GetPreCutoffDetails().GetTimestamp())
+			balanceUser.PreCutoffDetails = balanceUser.GetBalanceDetails()
+		}
+
 		pending, ok := new(big.Int).SetString(balanceUser.GetBalanceDetails().GetPending(), 10)
 		if !ok {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could convert balanceUser.GetBalanceDetails().GetPending() to big.Int (%s)", balanceUser.GetBalanceDetails().GetPending())}
@@ -311,7 +330,15 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 			if newBalanceCreated {
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("if wallet is linked walletBalance object must exist at (%v)", walletBalanceAddress)}
 			}
+
+			if walletBalance.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(newBalanceDetails.GetTimestamp()) > CalculateRewardsDay(walletBalance.GetBalanceDetails().GetTimestamp()) {
+				logger.Infof("Updating walletBalance PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
+					newBalanceDetails.GetTimestamp(), walletBalance.GetBalanceDetails().GetTimestamp(), walletBalance.GetPreCutoffDetails().GetTimestamp())
+				walletBalance.PreCutoffDetails = walletBalance.GetBalanceDetails()
+			}
+
 			walletBalance.BalanceDetails.TotalPending = balanceUser.BalanceDetails.GetTotalPending()
+			walletBalance.BalanceDetails.LastUpdateType = pending_props_pb.UpdateType_PENDING_PROPS_BALANCE
 			s.UpdateBalance(*walletBalance, updates, true)
 		}
 	} else {
@@ -416,4 +443,11 @@ func (s *State) SaveBalanceUpdate(balanceUpdates ...pending_props_pb.BalanceUpda
 	}
 
 	return nil
+}
+
+func CalculateRewardsDay(timestamp int64) int64 {
+	// (block.timestamp.sub(_self.rewardsStartTimestamp)).div(_self.minSecondsBetweenDays).add(1);
+	secondsInDay := viper.GetInt64("seconds_in_day")
+	return timestamp / secondsInDay
+
 }
