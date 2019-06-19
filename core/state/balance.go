@@ -33,7 +33,10 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 			logger.Infof("Could not connect to main-chain to verify balance update %v",err);
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify balance update (%s)", err)}
 		}
-		latestHeader, _ := token.RPC.HeaderByNumber(context.Background(), nil)
+		latestHeader, err := token.RPC.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
+		}
 		latestBlockId := latestHeader.Number
 		if latestBlockId.Cmp(big.NewInt(0)) <= 0 {
 			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err);
