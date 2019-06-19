@@ -881,6 +881,16 @@ const padWithZeros = (address) => {
     return address;
 };
 
+const calcDay = function(secondsInDay) {
+    const currentTimestamp = Math.floor(Date.now()/1000);
+    const secondsLeft = secondsInDay - (currentTimestamp % secondsInDay);
+    const ret =  {
+        rewardsDay: ((currentTimestamp - (currentTimestamp % secondsInDay)) / secondsInDay),
+        secondsLeft
+    }
+    return ret;
+}
+
 module.exports = {
     transaction,
     externalBalanceUpdate,
@@ -893,6 +903,7 @@ module.exports = {
     signMessage,
     recoverFromSignature,
     transactionTypes,
+    calcDay,
 };
 
 // const secp256k1 = require('secp256k1');

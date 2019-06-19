@@ -73,8 +73,10 @@ func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) e
 				// unlink wallet from previous application user
 				unlinkedBalanceAddress, _ := BalanceAddress(pending_props_pb.Balance{ UserId: existingLinkedApplicationUser.GetUserId(), ApplicationId: existingLinkedApplicationUser.GetApplicationId()})
 				state, err := s.context.GetState([]string{unlinkedBalanceAddress})
-
-				if err != nil || len(string(state[unlinkedBalanceAddress])) == 0 {
+				if err != nil {
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get balance data %v (%s)", unlinkedBalanceAddress, err)}
+				}
+				if len(string(state[unlinkedBalanceAddress])) == 0 {
 					logger.Infof(fmt.Sprintf("Error / Not Found while getting state balance address=%v, applicationId=%v, userId=%v (%s)", unlinkedBalanceAddress, existingLinkedApplicationUser.GetApplicationId(), existingLinkedApplicationUser.GetUserId(), err1))
 					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Existing application user (%v, %v) to unlink must have an existing balance object %v (%s)", existingLinkedApplicationUser.GetApplicationId(), existingLinkedApplicationUser.GetUserId(), unlinkedBalanceAddress, err)}
 				} else {
@@ -221,7 +223,18 @@ func (s *State) UpdateLinkedWalletBalances(applicationUsers []*pending_props_pb.
 			if applicationUserBalance.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(balance.GetBalanceDetails().GetTimestamp()) > CalculateRewardsDay(applicationUserBalance.GetBalanceDetails().GetTimestamp()) {
 				logger.Infof("Updating applicationUserBalance PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
 					balance.GetBalanceDetails().GetTimestamp(), applicationUserBalance.GetBalanceDetails().GetTimestamp(), applicationUserBalance.GetPreCutoffDetails().GetTimestamp())
-				applicationUserBalance.PreCutoffDetails = applicationUserBalance.GetBalanceDetails()
+				//applicationUserBalance.PreCutoffDetails = applicationUserBalance.GetBalanceDetails()
+				applicationUserBalance.PreCutoffDetails = &pending_props_pb.BalanceDetails{
+					Pending:  applicationUserBalance.GetBalanceDetails().GetPending(),
+					TotalPending:  applicationUserBalance.GetBalanceDetails().GetTotalPending(),
+					Transferable:  applicationUserBalance.GetBalanceDetails().GetTransferable(),
+					Bonded: applicationUserBalance.GetBalanceDetails().GetBonded(),
+					Delegated: applicationUserBalance.GetBalanceDetails().GetDelegated(),
+					DelegatedTo: applicationUserBalance.GetBalanceDetails().GetDelegatedTo(),
+					Timestamp: applicationUserBalance.GetBalanceDetails().GetTimestamp(),
+					LastEthBlockId: applicationUserBalance.GetBalanceDetails().GetLastEthBlockId(),
+					LastUpdateType: applicationUserBalance.GetBalanceDetails().GetLastUpdateType(),
+				}
 			}
 
 
@@ -247,7 +260,18 @@ func (s *State) UpdateLinkedWalletBalances(applicationUsers []*pending_props_pb.
 				if applicationUserBalance.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(balance.GetBalanceDetails().GetTimestamp()) > CalculateRewardsDay(applicationUserBalance.GetBalanceDetails().GetTimestamp()) {
 					logger.Infof("Updating applicationUserBalance PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
 						balance.GetBalanceDetails().GetTimestamp(), applicationUserBalance.GetBalanceDetails().GetTimestamp(), applicationUserBalance.GetPreCutoffDetails().GetTimestamp())
-					applicationUserBalance.PreCutoffDetails = applicationUserBalance.GetBalanceDetails()
+					//applicationUserBalance.PreCutoffDetails = applicationUserBalance.GetBalanceDetails()
+					applicationUserBalance.PreCutoffDetails = &pending_props_pb.BalanceDetails{
+						Pending:  applicationUserBalance.GetBalanceDetails().GetPending(),
+						TotalPending:  applicationUserBalance.GetBalanceDetails().GetTotalPending(),
+						Transferable:  applicationUserBalance.GetBalanceDetails().GetTransferable(),
+						Bonded: applicationUserBalance.GetBalanceDetails().GetBonded(),
+						Delegated: applicationUserBalance.GetBalanceDetails().GetDelegated(),
+						DelegatedTo: applicationUserBalance.GetBalanceDetails().GetDelegatedTo(),
+						Timestamp: applicationUserBalance.GetBalanceDetails().GetTimestamp(),
+						LastEthBlockId: applicationUserBalance.GetBalanceDetails().GetLastEthBlockId(),
+						LastUpdateType: applicationUserBalance.GetBalanceDetails().GetLastUpdateType(),
+					}
 				}
 			}
 			applicationUserBalance.BalanceDetails.TotalPending = balance.BalanceDetails.GetTotalPending()
