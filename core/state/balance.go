@@ -28,18 +28,19 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	var settledAmount *big.Int
 	if err == nil && len(string(existingTxStateData[updateBalanceTransactionAddress])) == 0 {
 		logger.Infof(fmt.Sprintf("Error / Not Found while getting state updateBalanceTransactionAddress %v, %v", updateBalanceTransactionAddress, err))
-		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"));
+		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"))
 		if err != nil {
-			logger.Infof("Could not connect to main-chain to verify balance update %v",err);
+			logger.Infof("Could not connect to main-chain to verify balance update %v",err)
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify balance update (%s)", err)}
 		}
 		latestHeader, err := token.RPC.HeaderByNumber(context.Background(), nil)
 		if err != nil {
+			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err)
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
 		latestBlockId := latestHeader.Number
 		if latestBlockId.Cmp(big.NewInt(0)) <= 0 {
-			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err);
+			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err)
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
 		logger.Infof("Latest Block on main-chain is %v", latestBlockId.String())
@@ -401,6 +402,9 @@ func (s *State) SaveBalanceUpdate(balanceUpdates ...pending_props_pb.BalanceUpda
 			errMsg := err.Error()
 			if strings.Index(errMsg,"TransactionHashAlreadyExists") >= 0 {
 				return nil
+			} else
+			{
+				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Error verifying transaction  (%v)", err)}
 			}
 		}
 
