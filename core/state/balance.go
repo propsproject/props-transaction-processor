@@ -172,7 +172,10 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	balanceAddressWallet, _ := BalanceAddress(newBalanceWallet)
 	state, err := s.context.GetState([]string{balanceAddressWallet})
 	var balanceWallet pending_props_pb.Balance
-	if err != nil || len(string(state[balanceAddressWallet])) == 0 {
+	if err != nil {
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", balanceAddressWallet, err)}
+	}
+	if len(string(state[balanceAddressWallet])) == 0 {
 		logger.Infof("Error / Not Found while getting state %v recipient address %v, %v", balanceAddressWallet, eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()), err)
 		balanceWallet = newBalanceWallet
 	} else {
@@ -204,7 +207,10 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: balanceWallet.GetUserId()})
 	state1, err1 := s.context.GetState([]string{walletLinkAddress})
 	var walletToUserData pending_props_pb.WalletToUser
-	if err != nil || len(string(state1[walletLinkAddress])) == 0 {
+	if err != nil {
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", walletLinkAddress, err)}
+	}
+	if len(string(state1[walletLinkAddress])) == 0 {
 
 		logger.Infof("Error / Not Found while getting linked wallet data %v from state - it is not linked %v", walletLinkAddress, err1)
 		return nil
@@ -251,7 +257,10 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 	logger.Infof("BalanceAddress = %v", balanceAddressUser)
 	state, err := s.context.GetState([]string{balanceAddressUser})
 	var balanceUser pending_props_pb.Balance
-	if err != nil || len(string(state[balanceAddressUser])) == 0{
+	if err != nil {
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", balanceAddressUser, err)}
+	}
+	if len(string(state[balanceAddressUser])) == 0{
 		// how to differentiate between error and not found?
 		// assume error caused by not found
 		logger.Infof("Error / Not Found while getting previous balance from state %v", err)
@@ -296,7 +305,10 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 		walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: balanceUser.GetLinkedWallet()})
 		state, err := s.context.GetState([]string{walletLinkAddress})
 		var walletToUserData pending_props_pb.WalletToUser
-		if err != nil || len(string(state[walletLinkAddress])) == 0 {
+		if err != nil {
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", walletLinkAddress, err)}
+		}
+		if len(string(state[walletLinkAddress])) == 0 {
 
 			logger.Infof("Error / Not Found while getting previous linked wallet data %v from state %v", walletLinkAddress, err)
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Wallet %v is marked as link but no such object exists", walletLinkAddress)}
@@ -360,7 +372,10 @@ func (s * State) GetBalanceByApplicationUser(applicationUser pending_props_pb.Ap
 	balanceAddress, _ := BalanceAddressByAppUser(applicationUser.GetApplicationId(), applicationUser.GetUserId())
 	state, err := s.context.GetState([]string{balanceAddress})
 	var balance pending_props_pb.Balance
-	if err != nil || len(string(state[balanceAddress])) == 0 {
+	if err != nil {
+		return balanceAddress, nil, newBalanceCreated, &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", balanceAddress, err)}
+	}
+	if len(string(state[balanceAddress])) == 0 {
 		// balance does not exist yet
 		newBalanceCreated = true
 		logger.Infof(fmt.Sprintf("Error / Not Found while getting balance address=%v,applicationId=%v,userId=%v,err=%v", balanceAddress, applicationUser.GetApplicationId(), applicationUser.GetUserId(), err))
