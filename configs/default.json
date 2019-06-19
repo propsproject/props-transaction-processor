@@ -8,6 +8,6 @@
   "worker-queue": 100,
   "threads": 0,
   "props_token_contract_address": "",
-  "settlement_from_addresses": {"": ""},
+  "settlement_from_addresses": {"0xcecdba0012046dc3c4715ad3737482f92a087635":"0xa80a6946f8af393d422cd6feee9040c25121a3b8"},
   "confirmation-blocks": 15
 }
