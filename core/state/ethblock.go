@@ -16,7 +16,12 @@ func (s *State) GetLastEthBlockData() (*pending_props_pb.LastEthBlock, error) {
 	var lastEthBlockData pending_props_pb.LastEthBlock
 	logger.Info("Last block data %v", lastEthBlockAddress)
 
-	if err == nil && len(string(existingLastEthBlockData[lastEthBlockAddress])) > 0 {
+	if err != nil {
+		logger.Infof("Unable to fetch the lastEthBlockData state %s", lastEthBlockAddress)
+		return nil, &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get eth block state %v (%s)", lastEthBlockAddress, err)}
+	}
+
+	if len(string(existingLastEthBlockData[lastEthBlockAddress])) > 0 {
 		for _, value := range existingLastEthBlockData {
 			err := proto.Unmarshal(value, &lastEthBlockData)
 			if err != nil {
@@ -35,7 +40,12 @@ func (s *State) UpdateLastEthBlock(blockUpdate pending_props_pb.LastEthBlock) (e
 	ethBlockAddress, _ := LastEthBlockAddress()
 	existingLastEthBlockData, err := s.context.GetState([]string{ethBlockAddress})
 	var lastEthBlockData pending_props_pb.LastEthBlock
-	if err != nil || len(string(existingLastEthBlockData[ethBlockAddress])) == 0 {
+
+	if err != nil {
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Unable to get state of ethblockaddress %v", ethBlockAddress)}, nil
+	}
+
+	if len(string(existingLastEthBlockData[ethBlockAddress])) == 0 {
 		logger.Infof("Error / Not Found while getting state ethBlockAddress %v, %v", ethBlockAddress, err)
 		newLastEthBlock := pending_props_pb.LastEthBlock{
 			Id: blockUpdate.GetId(),
