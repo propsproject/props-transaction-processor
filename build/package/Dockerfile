@@ -35,9 +35,7 @@ RUN make build
 
 FROM ubuntu:18.04
 RUN apt-get update \
-    && apt-get install -y -q libzmq3-dev \
-    && apt-get ca-certificates \
-    && apt-get curl \
+    && apt-get install -y -q libzmq3-dev ca-certificates curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=multistage /go/src/github.com/propsproject/props-transaction-processor/build/bin/pending-props-tp /go/bin/
