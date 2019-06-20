@@ -74,7 +74,7 @@ func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) e
 				unlinkedBalanceAddress, _ := BalanceAddress(pending_props_pb.Balance{ UserId: existingLinkedApplicationUser.GetUserId(), ApplicationId: existingLinkedApplicationUser.GetApplicationId()})
 				state, err := s.context.GetState([]string{unlinkedBalanceAddress})
 				if err != nil {
-					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get balance data %v (%s)", unlinkedBalanceAddress, err)}
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", unlinkedBalanceAddress, err)}
 				}
 				if len(string(state[unlinkedBalanceAddress])) == 0 {
 					logger.Infof(fmt.Sprintf("Error / Not Found while getting state balance address=%v, applicationId=%v, userId=%v (%s)", unlinkedBalanceAddress, existingLinkedApplicationUser.GetApplicationId(), existingLinkedApplicationUser.GetUserId(), err1))

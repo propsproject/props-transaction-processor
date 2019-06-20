@@ -28,15 +28,19 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	var settledAmount *big.Int
 	if err == nil && len(string(existingTxStateData[updateBalanceTransactionAddress])) == 0 {
 		logger.Infof(fmt.Sprintf("Error / Not Found while getting state updateBalanceTransactionAddress %v, %v", updateBalanceTransactionAddress, err))
-		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"));
+		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"))
 		if err != nil {
-			logger.Infof("Could not connect to main-chain to verify balance update %v",err);
+			logger.Infof("Could not connect to main-chain to verify balance update %v",err)
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify balance update (%s)", err)}
 		}
-		latestHeader, _ := token.RPC.HeaderByNumber(context.Background(), nil)
+		latestHeader, err := token.RPC.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err)
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
+		}
 		latestBlockId := latestHeader.Number
 		if latestBlockId.Cmp(big.NewInt(0)) <= 0 {
-			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err);
+			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err)
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
 		logger.Infof("Latest Block on main-chain is %v", latestBlockId.String())
@@ -173,7 +177,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	state, err := s.context.GetState([]string{balanceAddressWallet})
 	var balanceWallet pending_props_pb.Balance
 	if err != nil {
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get wallet balance state data %v proto data (%s)", balanceAddressWallet, err)}
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", balanceAddressWallet, err)}
 	}
 	if len(string(state[balanceAddressWallet])) == 0 {
 		logger.Infof("Error / Not Found while getting state %v recipient address %v, %v", balanceAddressWallet, eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()), err)
@@ -229,8 +233,8 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: balanceWallet.GetUserId()})
 	state1, err1 := s.context.GetState([]string{walletLinkAddress})
 	var walletToUserData pending_props_pb.WalletToUser
-	if err != nil {
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get wallet link %v proto data (%s)", walletLinkAddress, err)}
+	if err1 != nil {
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", walletLinkAddress, err1)}
 	}
 	if len(string(state1[walletLinkAddress])) == 0 {
 
@@ -281,7 +285,7 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 	state, err := s.context.GetState([]string{balanceAddressUser})
 	var balanceUser pending_props_pb.Balance
 	if err != nil {
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get balance state %v data (%s)", balanceAddressUser, err)}
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", balanceAddressUser, err)}
 	}
 	if len(string(state[balanceAddressUser])) == 0{
 		// how to differentiate between error and not found?
@@ -346,8 +350,8 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 		walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: balanceUser.GetLinkedWallet()})
 		state, err := s.context.GetState([]string{walletLinkAddress})
 		var walletToUserData pending_props_pb.WalletToUser
-		if err !=nil {
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get wallet link data %v (%s)", walletLinkAddress, err)}
+		if err != nil {
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", walletLinkAddress, err)}
 		}
 		if len(string(state[walletLinkAddress])) == 0 {
 
@@ -434,7 +438,7 @@ func (s * State) GetBalanceByApplicationUser(applicationUser pending_props_pb.Ap
 	state, err := s.context.GetState([]string{balanceAddress})
 	var balance pending_props_pb.Balance
 	if err != nil {
-		return balanceAddress, nil, newBalanceCreated, &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get balance data %v (%s)", balanceAddress, err)}
+		return balanceAddress, nil, newBalanceCreated, &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", balanceAddress, err)}
 	}
 	if len(string(state[balanceAddress])) == 0 {
 		// balance does not exist yet
@@ -478,6 +482,9 @@ func (s *State) SaveBalanceUpdate(balanceUpdates ...pending_props_pb.BalanceUpda
 			errMsg := err.Error()
 			if strings.Index(errMsg,"TransactionHashAlreadyExists") >= 0 {
 				return nil
+			} else
+			{
+				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Error verifying transaction  (%v)", err)}
 			}
 		}
 
