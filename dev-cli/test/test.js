@@ -17,10 +17,11 @@ function add(accumulator, a) {
 
 let startTime = Math.floor(Date.now() / 1000);
 let earningAddresses = [];
+const secondsInDay = 20; // should match development.json "seconds_in_day"
 const amounts = [125, 50.5];
 const descriptions = ["Broadcasting", "Watching"];
 const waitTimeUntilOnChain = 750; // miliseconds
-const longerTestWaitMultiplier = 5;
+const longerTestWaitMultiplier = 6;
 
 // data about the ethereum transactions we're testing with
 const walletAddress =  "0x2d4dcf292bc5bd8d7246099052dfc76b3cdd3524";
@@ -260,7 +261,7 @@ describe('Sawtooth side chain test', async () => {
         const user = "user1";
         const sig = await pendingProps.signMessage(`${app}_${user}`, walletAddress, pk); // "signature11";
         const testSig =  await pendingProps.signMessage(`${app}_8195af8336c01e8014348a906b6adfcf`, walletAddress, pk); // "signature11";
-        console.log(`testSig=${testSig}`);
+        // console.log(`testSig=${testSig}`);
         // issue
         await pendingProps.linkWallet(walletAddress, app, user, sig);
         global.timeOfStart = Math.floor(Date.now());
@@ -671,6 +672,72 @@ describe('Sawtooth side chain test', async () => {
         expect(walletBalanceTransferableAmount.toString()).to.be.equal(balanceAtBlock2.toString());
     });
 
+    it('Issue an earning before and after day change properly update precut and current balance', async() => {
+        const addresses = {};
+        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const user1 = "user1";
+        const app2 = "app2";
+        const user2 = "user1";
+        // issue
+        // wait for new day to begin
+        let currentDay = pendingProps.calcDay(secondsInDay);
+        console.log(`waiting for new "day" to start ${currentDay.secondsLeft} seconds...`);
+        await waitUntil(() => {
+            const day = pendingProps.calcDay(secondsInDay);
+
+            return (day.rewardsDay == (currentDay.rewardsDay + 1))
+        }, 30000, 100);
+        await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0], descriptions[0], addresses);
+
+        currentDay = pendingProps.calcDay(secondsInDay);
+        console.log(`waiting for new "day" to start ${currentDay.secondsLeft} seconds...`);
+        await waitUntil(() => {
+            const day = pendingProps.calcDay(secondsInDay);
+            return (day.rewardsDay == (currentDay.rewardsDay + 1))
+        }, 30000, 100);
+
+        await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0], descriptions[0], addresses);
+        global.timeOfStart = Math.floor(Date.now());
+        // wait a bit for it to be on chain
+        await waitUntil(() => {
+            const timePassed =  Math.floor(Date.now()) - global.timeOfStart;
+            // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
+            return (timePassed > waitTimeUntilOnChain)
+        }, 10000, 100);
+        const balanceAddress1 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app1, user1)
+        const balanceOnChain1 = await pendingProps.queryState(balanceAddress1, 'balance');
+        const balanceAddress2 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app2, user2)
+        const balanceOnChain2 = await pendingProps.queryState(balanceAddress2, 'balance');
+        const walletBalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", walletAddress)
+        const walletBalanceOnChain = await pendingProps.queryState(walletBalanceAddress, 'balance');
+
+        const balanceObj1 = balanceOnChain1[0];
+        const balanceDetails1 = balanceObj1.balanceDetails;
+        const balancePreCutoffDetails1 = balanceObj1.preCutoffDetails;
+        const balanceObj2 = balanceOnChain2[0];
+        const balanceDetails2 = balanceObj2.balanceDetails;
+        const balancePreCutoffDetails2 = balanceObj2.preCutoffDetails;
+        const walletBalanceObj = walletBalanceOnChain[0];
+        const walletBalanceDetails = walletBalanceObj.balanceDetails;
+        const walletPreCutoffDetails = walletBalanceObj.preCutoffDetails;
+
+        expect(balancePreCutoffDetails1.timestamp).to.be.lt(balanceDetails1.timestamp);
+        expect(balancePreCutoffDetails2.timestamp).to.be.lt(balanceDetails2.timestamp);
+        expect(walletPreCutoffDetails.timestamp).to.be.lt(walletBalanceDetails.timestamp);
+
+        const balanceTotalPendingAmount1 = new BigNumber(balanceDetails1.totalPending, 10);
+        const balancePreCutoffTotalPendingAmount1 = new BigNumber(balancePreCutoffDetails1.totalPending, 10);
+        const balanceTotalPendingAmount2 = new BigNumber(balanceDetails2.totalPending, 10);
+        const balancePreCutoffTotalPendingAmount2 = new BigNumber(balancePreCutoffDetails2.totalPending, 10);
+        const walletBalanceTotalPendingAmount = new BigNumber(walletBalanceDetails.totalPending, 10);
+        const walletPreCutoffBalanceTotalPendingAmount = new BigNumber(walletPreCutoffDetails.totalPending, 10);
+
+        expect(balanceTotalPendingAmount1.minus(balancePreCutoffTotalPendingAmount1).div(1e18).toString()).to.be.equal(amounts[0].toString());
+        expect(balanceTotalPendingAmount2.minus(balancePreCutoffTotalPendingAmount2).div(1e18).toString()).to.be.equal(amounts[0].toString());
+        expect(walletBalanceTotalPendingAmount.minus(walletPreCutoffBalanceTotalPendingAmount).div(1e18).toString()).to.be.equal(amounts[0].toString());
+
+    });
+
     it('Successfully settle a linked wallet with an external balance update with tx from being the rewardsAddress of the app (hardcoded in TP)', async() => {
         const addresses = {};
         const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
@@ -736,80 +803,18 @@ describe('Sawtooth side chain test', async () => {
         const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
 
         // expect balance details to be correct considering the linked wallet
-        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
         expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
-        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
-        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
+        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
         expect(balanceTransferableAmount1.toString()).to.be.equal(settlementBalanceAtBlock.toString());
         expect(balanceTransferableAmount2.toString()).to.be.equal(settlementBalanceAtBlock.toString());
         expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
-        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
         expect(walletBalanceTransferableAmount.toString()).to.be.equal(settlementBalanceAtBlock.toString());
     });
 
-    // it('Successfully settle a user with a linked wallet', async() => {
-    //     const addresses = {};
-    //     const app1 = "app1";
-    //     const user1 = "user1";
-    //     const app2 = "app2";
-    //     const user2 = "user1";
-    //     await pendingProps.transaction(pendingProps.transactionTypes.SETTLE, app1, user1, settlementAmount, 'settle1', settlementTxHash, walletAddress, addresses);
-    //     // console.log(JSON.stringify(addresses));
-    //     global.timeOfStart = Math.floor(Date.now());
-    //     // wait a bit for it to be on chain
-    //     await waitUntil(() => {
-    //         const timePassed =  Math.floor(Date.now()) - global.timeOfStart;
-    //         // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
-    //         return (timePassed > (waitTimeUntilOnChain*longerTestWaitMultiplier))
-    //     }, 10000, 100);
-    //     const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'transaction');
-    //     // console.log(JSON.stringify(earningOnChain));
-    //     const balanceAddress1 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app1, user1)
-    //     const balanceOnChain1 = await pendingProps.queryState(balanceAddress1, 'balance');
-    //     const balanceAddress2 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app2, user2)
-    //     const balanceOnChain2 = await pendingProps.queryState(balanceAddress2, 'balance');
-    //     const walletBalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", walletAddress)
-    //     const walletBalanceOnChain = await pendingProps.queryState(walletBalanceAddress, 'balance');
-    //     // console.log(`balanceOnChain1=${JSON.stringify(balanceOnChain1)}`);
-    //     // console.log(`balanceOnChain2=${JSON.stringify(balanceOnChain2)}`);
-    //
-    //     const balanceObj1 = balanceOnChain1[0];
-    //     const balanceDetails1 = balanceObj1.balanceDetails;
-    //     const balanceObj2 = balanceOnChain2[0];
-    //     const balanceDetails2 = balanceObj2.balanceDetails;
-    //     const walletBalanceObj = walletBalanceOnChain[0];
-    //     const walletBalanceDetails = walletBalanceObj.balanceDetails;
-    //
-    //
-    //     const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
-    //     // expect earning details to be correct
-    //     expect(earningPropsAmount.div(1e18).toString()).to.be.equal(settlementAmount.toString());
-    //     expect(earningOnChain[0].transaction.userId).to.be.equal(user1);
-    //     expect(earningOnChain[0].transaction.applicationId).to.be.equal(app1);
-    //     expect(earningOnChain[0].transaction.description).to.be.equal('settle1');
-    //     expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.SETTLE);
-    //
-    //     const balancePendingAmount1 = new BigNumber(balanceDetails1.pending, 10);
-    //     const balancePendingAmount2 = new BigNumber(balanceDetails2.pending, 10);
-    //     const balanceTotalPendingAmount1 = new BigNumber(balanceDetails1.totalPending, 10);
-    //     const balanceTotalPendingAmount2 = new BigNumber(balanceDetails2.totalPending, 10);
-    //     const balanceTransferableAmount1 = new BigNumber(balanceDetails1.transferable, 10);
-    //     const balanceTransferableAmount2 = new BigNumber(balanceDetails2.transferable, 10);
-    //     const walletBalancePendingAmount = new BigNumber(walletBalanceDetails.pending, 10);
-    //     const walletBalanceTotalPendingAmount = new BigNumber(walletBalanceDetails.totalPending, 10);
-    //     const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
-    //
-    //     // expect balance details to be correct considering the linked wallet
-    //     expect(balancePendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
-    //     expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
-    //     expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
-    //     expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
-    //     expect(balanceTransferableAmount1.toString()).to.be.equal(balanceAtBlock2.toString());
-    //     expect(balanceTransferableAmount2.toString()).to.be.equal(balanceAtBlock2.toString());
-    //     expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
-    //     expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
-    //     expect(walletBalanceTransferableAmount.toString()).to.be.equal(balanceAtBlock2.toString());
-    // });
+
 
     // TODO - add more test for error scenarios such as replaying the same transaction, last eth block smaller than current, bad signatures, etc.
 
