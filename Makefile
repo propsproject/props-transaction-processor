@@ -10,11 +10,8 @@ all: run
 build-deploy:
 	docker build -f ${DOCKERFILE} -t $(REPO):$(BUILD_NUMBER) .
 
-build-local:
-	docker build -f ${DOCKERFILE} -t props-payouts .
-
 docker-image:
-	docker build -f ${DOCKERFILE} -t pending-props .
+	docker build -f ${DOCKERFILE} -t propsprojectservices/props-transaction-processor:latest .
 
 deps:
 	go get ${PKG}
