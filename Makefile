@@ -11,7 +11,11 @@ build-deploy:
 	docker build -f ${DOCKERFILE} -t $(REPO):$(BUILD_NUMBER) .
 
 docker-image:
-	docker build -f ${DOCKERFILE} -t propsprojectservices/props-transaction-processor:latest .
+ifeq (${TAG},)
+	@echo "Pass the tag name, e.g make TAG=latest docker-image"
+else
+	docker build -f ${DOCKERFILE} -t propsprojectservices/props-transaction-processor:${TAG} .
+endif
 
 deps:
 	go get ${PKG}
