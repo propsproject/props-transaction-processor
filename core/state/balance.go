@@ -208,7 +208,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	state1, err1 := s.context.GetState([]string{walletLinkAddress})
 	var walletToUserData pending_props_pb.WalletToUser
 	if err1 != nil {
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", walletLinkAddress, err)}
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", walletLinkAddress, err1)}
 	}
 	if len(string(state1[walletLinkAddress])) == 0 {
 
