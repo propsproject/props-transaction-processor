@@ -36,6 +36,10 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 			if (address == from && !settlement) || address == to {
 
 			} else {
+				if (from == "0x0000000000000000000000000000000000000000" && to != address) || (to == "0x0000000000000000000000000000000000000000" && from != address) {
+					continue
+				}
+
 				return nil, 0, fmt.Errorf("transaction %v address does not match reported balance update address %v, %v do not match %v", transactionHash, from, to, address)
 			}
 

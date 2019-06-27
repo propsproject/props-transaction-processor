@@ -238,7 +238,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	}
 	if len(string(state1[walletLinkAddress])) == 0 {
 
-		logger.Infof("Error / Not Found while getting linked wallet data %v from state - it is not linked %v", walletLinkAddress, err1)
+		logger.Infof("Error / Not Found while getting linked wallet data %v from state - it is not linked %v", walletLinkAddress)
 		return nil
 	} else {
 		for _, value := range state1 {

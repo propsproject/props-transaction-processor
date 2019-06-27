@@ -10,11 +10,12 @@ all: run
 build-deploy:
 	docker build -f ${DOCKERFILE} -t $(REPO):$(BUILD_NUMBER) .
 
-build-local:
-	docker build -f ${DOCKERFILE} -t props-payouts .
-
 docker-image:
-	docker build -f ${DOCKERFILE} -t pending-props .
+ifeq (${TAG},)
+	@echo "Pass the tag name, e.g make TAG=latest docker-image"
+else
+	docker build -f ${DOCKERFILE} -t propsprojectservices/props-transaction-processor:${TAG} .
+endif
 
 deps:
 	go get ${PKG}
