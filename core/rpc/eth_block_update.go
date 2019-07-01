@@ -7,7 +7,7 @@ import (
 	"github.com/propsproject/props-transaction-processor/core/state"
 )
 
-var ethLastBlockUpdateHandle = func(request *processor_pb2.TpProcessRequest, context *processor.Context, rpcReq *pending_props_pb.RPCRequest) error {
+var ethLastBlockUpdateHandle = func(request *processor_pb2.TpProcessRequest, context *processor.Context, rpcReq *pending_props_pb.RPCRequest, address string) error {
 
 	lastEthBlockUpdate, err := decodeLastEthBlockRequest(rpcReq)
 	if err != nil {

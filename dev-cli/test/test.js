@@ -20,12 +20,14 @@ let earningAddresses = [];
 const secondsInDay = 20; // should match development.json "seconds_in_day"
 const amounts = [125, 50.5];
 const descriptions = ["Broadcasting", "Watching"];
-const waitTimeUntilOnChain = 750; // miliseconds
+const waitTimeUntilOnChain = 1250; // miliseconds
 const longerTestWaitMultiplier = 6;
 
 // data about the ethereum transactions we're testing with
+const sawtoothPk1 = "5895c973a69c4fe662fcda172900a98bb918c0c31bf374f1b781bc34531cce3f";
+const sawtoothPk2 = "af37d6a745b32ef52c80b4b6b18560dfd085e5f3e9ee819478b795733a19257c";
 const walletAddress =  "0x2d4dcf292bc5bd8d7246099052dfc76b3cdd3524";
-const pk = "759b603832da1100ab47c0f4aa6d445637eb5873d25cadd40484c48970b814d7";
+const pk = "5895c973a69c4fe662fcda172900a98bb918c0c31bf374f1b781bc34531cce3f";
 const balanceAtBlock = "428521654000000000000000";
 const txHash = "0x0d4d80b54378376131e1ec60ee804fa58f0c33151cd340c8a971cca0a4033834";
 const blockNum = "3961643";
@@ -45,6 +47,7 @@ const settlementBlockNum = "3967331";
 
 // remove pending-props.js logs
 pendingProps.setLoggerType(-1);
+
 
 describe('Sawtooth side chain test', async () => {
     before(async () => {
@@ -103,7 +106,7 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue an earning', async() => {
         const addresses = {};
-        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user = "user1";
         // issue
         await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[0], descriptions[0], addresses);
@@ -146,7 +149,7 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue another earning', async() => {
         const addresses = {};
-        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user = "user1";
         // issue
         await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[1], descriptions[1], addresses);
@@ -182,7 +185,7 @@ describe('Sawtooth side chain test', async () => {
         expect(balancePendingAmount.div(1e18).toString()).to.be.equal(sum);
         expect(balanceTotalPendingAmount.div(1e18).toString()).to.be.equal(sum);
         expect(balanceObj.userId).to.be.equal('user1');
-        expect(balanceObj.applicationId).to.be.equal('0xa80a6946f8af393d422cd6feee9040c25121a3b8');
+        expect(balanceObj.applicationId).to.be.equal('0x96c41cfd601a477e80fd9fbf256e767e92ac4278');
         expect(balanceDetails.lastUpdateType).to.be.equal(0);
         expect(balanceObj.type).to.be.equal(0);
         expect(balanceObj.linkedWallet).to.be.equal("");
@@ -191,7 +194,7 @@ describe('Sawtooth side chain test', async () => {
     it('Successfully revoke an amount', async() => {
         const addresses = {};
         const user = "user1";
-        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app, user, amounts[0]+amounts[1], descriptions[0]+"-revoke", addresses);
         // console.log(JSON.stringify(revokeAddress));
         global.timeOfStart = Math.floor(Date.now());
@@ -257,10 +260,11 @@ describe('Sawtooth side chain test', async () => {
     });
 
     it('Successfully link app user to wallet', async() => {
-        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user = "user1";
-        const sig = await pendingProps.signMessage(`${app}_${user}`, walletAddress, pk); // "signature11";
-        const testSig =  await pendingProps.signMessage(`${app}_8195af8336c01e8014348a906b6adfcf`, walletAddress, pk); // "signature11";
+        const walletPk = "759b603832da1100ab47c0f4aa6d445637eb5873d25cadd40484c48970b814d7";
+        const sig = await pendingProps.signMessage(`${app}_${user}`, walletAddress, walletPk); // "signature11";
+        // const testSig =  await pendingProps.signMessage(`${app}_8195af8336c01e8014348a906b6adfcf`, walletAddress, pk); // "signature11";
         // console.log(`testSig=${testSig}`);
         // issue
         await pendingProps.linkWallet(walletAddress, app, user, sig);
@@ -341,7 +345,7 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue an earning to user with linked wallet', async() => {
         const addresses = {};
-        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user = "user1";
         // issue
         await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[0], descriptions[0], addresses);
@@ -394,7 +398,7 @@ describe('Sawtooth side chain test', async () => {
     it('Successfully revoke an earning of a user with a linked wallet', async() => {
         const addresses = {};
         const user = "user1";
-        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app, user, amounts[0], descriptions[0], addresses);
         // console.log(JSON.stringify(revokeAddress));
         global.timeOfStart = Math.floor(Date.now());
@@ -445,7 +449,7 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully update mainchain balance of a linked wallet (2nd update)', async() => {
         const user = "user1";
-        const app = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
 
         await pendingProps.externalBalanceUpdate(walletAddress, balanceAtBlock2, txHash2, blockNum2, timestamp2);
         global.timeOfStart = Math.floor(Date.now());
@@ -499,11 +503,13 @@ describe('Sawtooth side chain test', async () => {
     });
 
     it('Successfully link another app user to same wallet', async() => {
-        const app = "app2";
+        const app = "0x39dbb8ddeb0d0e86f17aa23d9dac4eeb69b76511";
         const user = "user1";
-        const linkedApp = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const linkedApp = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const linkedUser = "user1";
-        const sig =  await pendingProps.signMessage(`${app}_${user}`, walletAddress, pk); // "signature21";
+        const walletPk = "759b603832da1100ab47c0f4aa6d445637eb5873d25cadd40484c48970b814d7";
+        const sig =  await pendingProps.signMessage(`${app}_${user}`, walletAddress, walletPk); // "signature21";
+        pendingProps.newSigner(sawtoothPk2);
 
         // issue
         await pendingProps.linkWallet(walletAddress, app, user, sig);
@@ -565,10 +571,11 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully issue an earning to user with linked wallet with another user', async() => {
         const addresses = {};
-        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app1 = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user1 = "user1";
-        const app2 = "app2";
+        const app2 = "0x39dbb8ddeb0d0e86f17aa23d9dac4eeb69b76511";
         const user2 = "user1";
+        pendingProps.newSigner(sawtoothPk1);
         // issue
         await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0]*2, descriptions[0], addresses);
         // console.log(JSON.stringify(addresses));
@@ -621,9 +628,9 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully revoke an earning of a user with a linked wallet with another user', async() => {
         const addresses = {};
-        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app1 = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user1 = "user1";
-        const app2 = "app2";
+        const app2 = "0x39dbb8ddeb0d0e86f17aa23d9dac4eeb69b76511";
         const user2 = "user1";
         await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app1, user1, amounts[0], descriptions[0], addresses);
         // console.log(JSON.stringify(addresses));
@@ -674,9 +681,9 @@ describe('Sawtooth side chain test', async () => {
 
     it('Issue an earning before and after day change properly update precut and current balance', async() => {
         const addresses = {};
-        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app1 = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user1 = "user1";
-        const app2 = "app2";
+        const app2 = "0x39dbb8ddeb0d0e86f17aa23d9dac4eeb69b76511";
         const user2 = "user1";
         // issue
         // wait for new day to begin
@@ -740,9 +747,9 @@ describe('Sawtooth side chain test', async () => {
 
     it('Successfully settle a linked wallet with an external balance update with tx from being the rewardsAddress of the app (hardcoded in TP)', async() => {
         const addresses = {};
-        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const app1 = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const user1 = "user1";
-        const app2 = "app2";
+        const app2 = "0x39dbb8ddeb0d0e86f17aa23d9dac4eeb69b76511";
         const user2 = "user1";
 
         /*

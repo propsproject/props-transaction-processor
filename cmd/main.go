@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/propsproject/props-transaction-processor/core"
 	"github.com/spf13/pflag"
@@ -79,6 +80,20 @@ func parseConfigFile() error {
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("error reading configuration file: (%s)", err)
 	}
+	// parse json values back into viper
+	var settlementAddressJson map[string]interface{}
+	var validSignersJson map[string]interface{}
+	err1 := json.Unmarshal([]byte(viper.GetString("settlement_from_addresses")),&settlementAddressJson)
+	if err1 != nil {
+		return fmt.Errorf("error reading configuration file settlement_from_addresses malformed: (%s)", err1)
+	}
+	viper.Set("settlement_from_addresses_map", settlementAddressJson)
+	err2 := json.Unmarshal([]byte(viper.GetString("valid_signers_addresses")),&validSignersJson)
+	if err2 != nil {
+		return fmt.Errorf("error reading configuration file settlement_from_addresses malformed: (%s)", err2)
+	}
+	viper.Set("valid_signers_addresses_map", validSignersJson)
+
 
 	return nil
 }

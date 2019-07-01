@@ -42,23 +42,30 @@ const transactionTypes = {
 }
 // hard coded example private key
 // const pk = Buffer.from("196749ed808372060eaeffe10e56de82a48829fcf52199847e1e1db4b780ced0", 'hex');
-const pk = Buffer.from("fd899d64b5209b53e6b6380dbe195500d988b2184d3a7076681370d5d1c58408", 'hex');
+let pk = Buffer.from("5895c973a69c4fe662fcda172900a98bb918c0c31bf374f1b781bc34531cce3f", 'hex');
 
-const priv = new Secp256k1PrivateKey(pk);
-const signer = new CryptoFactory(context).newSigner(priv);
+let priv = new Secp256k1PrivateKey(pk);
+let signer = new CryptoFactory(context).newSigner(priv);
 
 let loggerType = 0; // 0 console, -1 none
+
+const newSigner = (pk) => {
+    priv = new Secp256k1PrivateKey(Buffer.from(pk, 'hex'));
+    signer = new CryptoFactory(context).newSigner(priv);
+}
 
 const setLoggerType = (type) => {
     loggerType = type;
 }
 
-const signMessage = async (msg, address, pk) => {
-    const privateKey = pk;
+const signMessage = async (msg, address, _pk) => {
+    const privateKey = _pk;
     const account = web3.eth.accounts.privateKeyToAccount('0x' + privateKey);
-    web3.eth.accounts.wallet.add(account);
-    web3.eth.defaultAccount = account.address;
-    return web3.eth.sign(msg, address);
+    // web3.eth.accounts.wallet.add(account);
+    // web3.eth.defaultAccount = account.address;
+    // return web3.eth.sign(msg, address);
+    const signed = account.sign(msg);
+    return signed.signature;
 }
 
 const recoverFromSignature = async (msg, sig) => {
@@ -903,6 +910,7 @@ module.exports = {
     signMessage,
     recoverFromSignature,
     transactionTypes,
+    newSigner,
     calcDay,
 };
 
