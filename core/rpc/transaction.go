@@ -1,11 +1,10 @@
 package rpc
 
 import (
-	"fmt"
-	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
-	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/propsproject/props-transaction-processor/core/state"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
+	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
 	"strings"
 )
 
@@ -13,10 +12,10 @@ var transactionHandle = func(request *processor_pb2.TpProcessRequest, context *p
 	logger.Infof("Inputs=%v",strings.Join(request.Header.Inputs,","))
 	logger.Infof("Outputs=%v",strings.Join(request.Header.Outputs,","))
 	transaction, err := decodeRequest(rpcReq)
-	if address != transaction.GetApplicationId() {
-		logger.Infof("Signer address %v does not match applicationId %v", address, transaction.GetApplicationId())
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Signer address %v does not match applicationId %v", address, transaction.GetApplicationId())}
-	}
+	//if address != transaction.GetApplicationId() {
+	//	logger.Infof("Signer address %v does not match applicationId %v", address, transaction.GetApplicationId())
+	//	return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Signer address %v does not match applicationId %v", address, transaction.GetApplicationId())}
+	//}
 	if err != nil {
 		return &processor.InvalidTransactionError{Msg: err.Error()}
 	}

@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"fmt"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/propsproject/props-transaction-processor/core/state"
 	"github.com/propsproject/sawtooth-go-sdk/processor"
@@ -13,10 +12,10 @@ var activityLogHandle = func(request *processor_pb2.TpProcessRequest, context *p
 	if err != nil {
 		return &processor.InvalidTransactionError{Msg: err.Error()}
 	}
-	if address != activities.GetApplicationId() {
-		logger.Infof("Signer address %v does not match applicationId %v", address, activities.GetApplicationId())
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Signer address %v does not match applicationId %v", address, activities.GetApplicationId())}
-	}
+	//if address != activities.GetApplicationId() {
+	//	logger.Infof("Signer address %v does not match applicationId %v", address, activities.GetApplicationId())
+	//	return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Signer address %v does not match applicationId %v", address, activities.GetApplicationId())}
+	//}
 	return state.NewState(context).SaveActivityLog(activities)
 }
 

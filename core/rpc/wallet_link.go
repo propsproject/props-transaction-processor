@@ -1,11 +1,10 @@
 package rpc
 
 import (
-	"fmt"
-	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
-	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/propsproject/props-transaction-processor/core/state"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
+	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
 )
 
 var walletLinkHandle = func(request *processor_pb2.TpProcessRequest, context *processor.Context, rpcReq *pending_props_pb.RPCRequest, address string) error {
@@ -13,10 +12,10 @@ var walletLinkHandle = func(request *processor_pb2.TpProcessRequest, context *pr
 	if err != nil {
 		return &processor.InvalidTransactionError{Msg: err.Error()}
 	}
-	if address != walletLinks.GetUsers()[0].GetApplicationId() {
-		logger.Infof("Signer address %v does not match applicationId %v", address, walletLinks.GetUsers()[0].GetApplicationId())
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Signer address %v does not match applicationId %v", address, walletLinks.GetUsers()[0].GetApplicationId())}
-	}
+	//if address != walletLinks.GetUsers()[0].GetApplicationId() {
+	//	logger.Infof("Signer address %v does not match applicationId %v", address, walletLinks.GetUsers()[0].GetApplicationId())
+	//	return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Signer address %v does not match applicationId %v", address, walletLinks.GetUsers()[0].GetApplicationId())}
+	//}
 	return state.NewState(context).SaveWalletLink(walletLinks)
 }
 

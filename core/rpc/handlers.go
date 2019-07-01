@@ -1,12 +1,11 @@
 package rpc
 
 import (
-	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
-	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"fmt"
-	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/golang/protobuf/proto"
-	"github.com/spf13/viper"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
+	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
 )
 
 type MethodHandler struct {
@@ -43,11 +42,11 @@ func (r *RPCClient) delegate(request *processor_pb2.TpProcessRequest, context *p
 		logger.Infof("Invalid key used to sign can't convert to Ethereum address: %v", err)
 		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Invalid key used to sign can't convert to Ethereum address: %v", err)}
 	} else {
-		allowedSignersMap := viper.GetStringMapString("valid_signers_addresses_map")
-		if _, ok := allowedSignersMap[address]; !ok {
-			logger.Infof("Invalid signer address: %v", address)
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Invalid signer address: %v", address)}
-		}
+		//allowedSignersMap := viper.GetStringMapString("valid_signers_addresses_map")
+		//if _, ok := allowedSignersMap[address]; !ok {
+		//	logger.Infof("Invalid signer address: %v", address)
+		//	return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Invalid signer address: %v", address)}
+		//}
 	}
 	if methodHandler, exists := r.MethodHandlers[method]; exists {
 		return methodHandler.Handle(request, context, &rpcRequest, address)
