@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/propsproject/props-transaction-processor/core"
-	"github.com/propsproject/sawtooth-go-sdk/logging"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -13,7 +12,8 @@ import (
 	"strings"
 )
 
-var logger *logging.Logger = logging.Get()
+var myLogger, _ = zap.NewProduction()
+var logger = myLogger.Sugar()
 
 func main() {
 	pflag.StringP("verbose", "v", "debug", "Log verbosity info|warning|debug")
@@ -29,29 +29,28 @@ func main() {
 		viper.BindPFlag( "config-file-path", pflag.Lookup("config-file-path"))
 		err := parseConfigFile()
 		if err != nil {
-			logger.Error("error parsing configuration file:  ", err)
+			logger.Errorf("error parsing configuration file:  ", err)
 			os.Exit(1)
 		}
 	} else {
 		viper.BindPFlags(pflag.CommandLine)
 	}
 
-	switch viper.GetString("verbose") {
-	case "debug":
-		logger.SetLevel(logging.DEBUG)
-	case "info":
-		logger.SetLevel(logging.INFO)
-	default:
-		logger.SetLevel(logging.WARN)
-	}
+	logger = logger.With(
+		zap.String("app", viper.GetString("app")),
+		zap.String("name", viper.GetString("name")),
+		zap.String("env", viper.GetString("environment")),
+	)
+
+	logger.Infof("Starting the transaction processor")
 
 	// Set some default values in the logger
-	logger.SetDefaultKeyValues(zap.String("app", viper.GetString("app")), zap.String("name", viper.GetString("name")), zap.String("env", viper.GetString("environment")))
+	//logger.SetDefaultKeyValues(zap.String("app", viper.GetString("app")), zap.String("name", viper.GetString("name")), zap.String("env", viper.GetString("environment")))
 
 	tp := core.NewTransactionProcessor(viper.GetString("validator_url"))
 	err := tp.Start()
 	if err != nil {
-		logger.Error("Processor stopped: ", err)
+		logger.Errorf("Processor stopped: ", err)
 	}
 }
 

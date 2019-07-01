@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/propsproject/goprops-toolkit/propstoken/bindings/token"
-	"github.com/propsproject/sawtooth-go-sdk/logging"
+	"github.com/hyperledger/sawtooth-sdk-go/logging"
 )
 
 type TransferDetails struct {
