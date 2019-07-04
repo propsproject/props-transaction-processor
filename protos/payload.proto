@@ -11,6 +11,7 @@ enum Method {
     LAST_ETH_BLOCK_UPDATE = 4;
     WALLET_LINK = 5;
     ACTIVITY_LOG = 6;
+    REWARD_ENTITY_UPDATE = 7;
 }
 
 message Params {

@@ -27,6 +27,7 @@ var (
 
 	walletLinkPrefix  = fmt.Sprintf("%s:%s:walletl", globalPrefix, globalEarningsPrefix)
 	activityLogPrefix = fmt.Sprintf("%s:%s:activity_log", globalPrefix, globalEarningsPrefix)
+	rewardEntityPrefix = fmt.Sprintf("%s:%s:rewardentity", globalPrefix, globalEarningsPrefix)
 )
 
 type NSMngr struct {
@@ -80,6 +81,10 @@ func (s *NSMngr) WalletLinkPrefix() string {
 
 func (s *NSMngr) ActivityLogPrefix() string {
 	return s.computeDefaultPrefix(activityLogPrefix)
+}
+
+func (s *NSMngr) RewardEntityPrefix() string {
+	return s.computeDefaultPrefix(rewardEntityPrefix)
 }
 
 func (s *NSMngr) BalanceUpdatesTransactionHashPrefix() string {

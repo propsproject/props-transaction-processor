@@ -120,3 +120,11 @@ func LastEthBlockAddress() (string, int) {
 func ActivityLogAddress(activity pending_props_pb.ActivityLog) (string, int) {
 	return NewAddress(NamespaceManager.ActivityLogPrefix()).AddParts(NewPart(fmt.Sprint(activity.GetDate()), 0, 8), NewPart(activity.GetApplicationId(), 0, 10), NewPart(activity.GetUserId(), 0, 46)).Build(false)
 }
+
+func RewardEntityAddressBySidechainAddress(rewardEntity pending_props_pb.RewardEntity) (string, int) {
+	return NewAddress(NamespaceManager.RewardEntityPrefix()).AddParts(NewPart(rewardEntity.GetSidechainAddress(), 0, 60),NewPart(rewardEntity.GetType().String(), 0, 4)).Build(false)
+}
+
+func RewardEntityAddressByRewardsAddress(rewardEntity pending_props_pb.RewardEntity) (string, int) {
+	return NewAddress(NamespaceManager.RewardEntityPrefix()).AddParts(NewPart(rewardEntity.GetRewardsAddress(), 0, 60),NewPart(rewardEntity.GetType().String(), 0, 4)).Build(false)
+}

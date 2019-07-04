@@ -42,8 +42,8 @@ out:
 
 protos:
 
-	protoc -I ./protos ./protos/transaction.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto --go_out=./core/proto/pending_props_pb
-	protoc -I ./protos ./protos/transaction.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto --js_out=import_style=commonjs,binary:./dev-cli/proto
+	protoc -I ./protos ./protos/transaction.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto ./protos/reward_entities.proto --go_out=./core/proto/pending_props_pb
+	protoc -I ./protos ./protos/transaction.proto ./protos/events.proto ./protos/payload.proto ./protos/balance.proto ./protos/users.proto ./protos/activity.proto ./protos/reward_entities.proto --js_out=import_style=commonjs,binary:./dev-cli/proto
 
 clean:
 	-@rm ${OUT} ${OUT}-v*

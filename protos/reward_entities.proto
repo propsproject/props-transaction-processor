@@ -1,0 +1,22 @@
+syntax = "proto3";
+package pending_props_pb;
+
+enum RewardEntityType {
+    VALIDATOR = 0;
+    APPLICATION = 1;
+}
+
+enum RewardEntityState {
+    ACTIVE = 0;
+    INACTIVE = 1;
+}
+
+message RewardEntity {
+    RewardEntityType type = 1;
+    string name = 2;
+    string address = 3;
+    string rewardsAddress = 4;
+    string sidechainAddress = 5;
+    RewardEntityState status = 6;
+
+}

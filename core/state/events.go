@@ -50,3 +50,12 @@ func (s *State) AddLastEthBlockUpdateEvent(event pending_props_pb.LastEthBlockEv
 	logger.Info(event, eventType, attributes)
 	return s.context.AddEvent(eventType, attributes, b)
 }
+
+func (s *State) AddRewardEntityUpdateEvent(event pending_props_pb.RewardEntityUpdateEvent, eventType string, attributes ...processor.Attribute) error {
+	b, err := proto.Marshal(&event)
+	if err != nil {
+		return err
+	}
+	logger.Info(event, eventType, attributes)
+	return s.context.AddEvent(eventType, attributes, b)
+}

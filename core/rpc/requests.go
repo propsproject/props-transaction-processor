@@ -50,6 +50,17 @@ func decodeLastEthBlockRequest(rpcReq *pending_props_pb.RPCRequest) (pending_pro
 	return lastEthBlock, nil
 }
 
+func decodeRewardEntityUpdateRequest(rpcReq *pending_props_pb.RPCRequest) (pending_props_pb.RewardEntity, error) {
+	var rewardEntity pending_props_pb.RewardEntity
+	err := getRewardEntityReqData(rpcReq.Params.GetData(), &rewardEntity)
+	if err != nil {
+		return rewardEntity, err
+	}
+	return rewardEntity, nil
+}
+
+
+
 func decodeWalletLinkRequest(rpcReq *pending_props_pb.RPCRequest) (pending_props_pb.WalletToUser, error) {
 	var walletToUser pending_props_pb.WalletToUser
 	err := getLinkedWalletReqData(rpcReq.Params.GetData(), &walletToUser)
@@ -74,6 +85,16 @@ func getLastBlockReqData(data *any.Any, lastEthBlock *pending_props_pb.LastEthBl
 	}
 	return nil
 }
+
+func getRewardEntityReqData(data *any.Any, rewardEntity *pending_props_pb.RewardEntity) error {
+	err := ptypes.UnmarshalAny(data, rewardEntity)
+	if err != nil {
+		return errors.New(fmt.Sprintf("could not unmarshal reward entity proto (%s)", err.Error()))
+	}
+	return nil
+}
+
+
 
 func getBalanceUpdateReqData(data *any.Any, balanceUpdate *pending_props_pb.BalanceUpdate) error {
 	err := ptypes.UnmarshalAny(data, balanceUpdate)

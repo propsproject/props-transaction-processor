@@ -3,14 +3,22 @@
 
 package pending_props_pb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type BalanceType int32
 
@@ -23,6 +31,7 @@ var BalanceType_name = map[int32]string{
 	0: "USER",
 	1: "WALLET",
 }
+
 var BalanceType_value = map[string]int32{
 	"USER":   0,
 	"WALLET": 1,
@@ -31,7 +40,10 @@ var BalanceType_value = map[string]int32{
 func (x BalanceType) String() string {
 	return proto.EnumName(BalanceType_name, int32(x))
 }
-func (BalanceType) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+
+func (BalanceType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_ee25a00b628521b1, []int{0}
+}
 
 type UpdateType int32
 
@@ -44,6 +56,7 @@ var UpdateType_name = map[int32]string{
 	0: "PENDING_PROPS_BALANCE",
 	1: "PROPS_BALANCE",
 }
+
 var UpdateType_value = map[string]int32{
 	"PENDING_PROPS_BALANCE": 0,
 	"PROPS_BALANCE":         1,
@@ -52,24 +65,50 @@ var UpdateType_value = map[string]int32{
 func (x UpdateType) String() string {
 	return proto.EnumName(UpdateType_name, int32(x))
 }
-func (UpdateType) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
 
-type BalanceDetails struct {
-	Pending        string     `protobuf:"bytes,1,opt,name=pending" json:"pending,omitempty"`
-	TotalPending   string     `protobuf:"bytes,2,opt,name=total_pending,json=totalPending" json:"total_pending,omitempty"`
-	Transferable   string     `protobuf:"bytes,3,opt,name=transferable" json:"transferable,omitempty"`
-	Bonded         string     `protobuf:"bytes,4,opt,name=bonded" json:"bonded,omitempty"`
-	Delegated      string     `protobuf:"bytes,5,opt,name=delegated" json:"delegated,omitempty"`
-	DelegatedTo    string     `protobuf:"bytes,6,opt,name=delegatedTo" json:"delegatedTo,omitempty"`
-	Timestamp      int64      `protobuf:"varint,7,opt,name=timestamp" json:"timestamp,omitempty"`
-	LastEthBlockId int64      `protobuf:"varint,8,opt,name=last_eth_block_id,json=lastEthBlockId" json:"last_eth_block_id,omitempty"`
-	LastUpdateType UpdateType `protobuf:"varint,9,opt,name=last_update_type,json=lastUpdateType,enum=pending_props_pb.UpdateType" json:"last_update_type,omitempty"`
+func (UpdateType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_ee25a00b628521b1, []int{1}
 }
 
-func (m *BalanceDetails) Reset()                    { *m = BalanceDetails{} }
-func (m *BalanceDetails) String() string            { return proto.CompactTextString(m) }
-func (*BalanceDetails) ProtoMessage()               {}
-func (*BalanceDetails) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+type BalanceDetails struct {
+	Pending              string     `protobuf:"bytes,1,opt,name=pending,proto3" json:"pending,omitempty"`
+	TotalPending         string     `protobuf:"bytes,2,opt,name=total_pending,json=totalPending,proto3" json:"total_pending,omitempty"`
+	Transferable         string     `protobuf:"bytes,3,opt,name=transferable,proto3" json:"transferable,omitempty"`
+	Bonded               string     `protobuf:"bytes,4,opt,name=bonded,proto3" json:"bonded,omitempty"`
+	Delegated            string     `protobuf:"bytes,5,opt,name=delegated,proto3" json:"delegated,omitempty"`
+	DelegatedTo          string     `protobuf:"bytes,6,opt,name=delegatedTo,proto3" json:"delegatedTo,omitempty"`
+	Timestamp            int64      `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	LastEthBlockId       int64      `protobuf:"varint,8,opt,name=last_eth_block_id,json=lastEthBlockId,proto3" json:"last_eth_block_id,omitempty"`
+	LastUpdateType       UpdateType `protobuf:"varint,9,opt,name=last_update_type,json=lastUpdateType,proto3,enum=pending_props_pb.UpdateType" json:"last_update_type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
+}
+
+func (m *BalanceDetails) Reset()         { *m = BalanceDetails{} }
+func (m *BalanceDetails) String() string { return proto.CompactTextString(m) }
+func (*BalanceDetails) ProtoMessage()    {}
+func (*BalanceDetails) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ee25a00b628521b1, []int{0}
+}
+
+func (m *BalanceDetails) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_BalanceDetails.Unmarshal(m, b)
+}
+func (m *BalanceDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_BalanceDetails.Marshal(b, m, deterministic)
+}
+func (m *BalanceDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BalanceDetails.Merge(m, src)
+}
+func (m *BalanceDetails) XXX_Size() int {
+	return xxx_messageInfo_BalanceDetails.Size(m)
+}
+func (m *BalanceDetails) XXX_DiscardUnknown() {
+	xxx_messageInfo_BalanceDetails.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BalanceDetails proto.InternalMessageInfo
 
 func (m *BalanceDetails) GetPending() string {
 	if m != nil {
@@ -135,18 +174,41 @@ func (m *BalanceDetails) GetLastUpdateType() UpdateType {
 }
 
 type Balance struct {
-	UserId           string          `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
-	ApplicationId    string          `protobuf:"bytes,2,opt,name=application_id,json=applicationId" json:"application_id,omitempty"`
-	BalanceDetails   *BalanceDetails `protobuf:"bytes,3,opt,name=balance_details,json=balanceDetails" json:"balance_details,omitempty"`
-	PreCutoffDetails *BalanceDetails `protobuf:"bytes,4,opt,name=pre_cutoff_details,json=preCutoffDetails" json:"pre_cutoff_details,omitempty"`
-	Type             BalanceType     `protobuf:"varint,5,opt,name=type,enum=pending_props_pb.BalanceType" json:"type,omitempty"`
-	LinkedWallet     string          `protobuf:"bytes,6,opt,name=linked_wallet,json=linkedWallet" json:"linked_wallet,omitempty"`
+	UserId               string          `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ApplicationId        string          `protobuf:"bytes,2,opt,name=application_id,json=applicationId,proto3" json:"application_id,omitempty"`
+	BalanceDetails       *BalanceDetails `protobuf:"bytes,3,opt,name=balance_details,json=balanceDetails,proto3" json:"balance_details,omitempty"`
+	PreCutoffDetails     *BalanceDetails `protobuf:"bytes,4,opt,name=pre_cutoff_details,json=preCutoffDetails,proto3" json:"pre_cutoff_details,omitempty"`
+	Type                 BalanceType     `protobuf:"varint,5,opt,name=type,proto3,enum=pending_props_pb.BalanceType" json:"type,omitempty"`
+	LinkedWallet         string          `protobuf:"bytes,6,opt,name=linked_wallet,json=linkedWallet,proto3" json:"linked_wallet,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *Balance) Reset()                    { *m = Balance{} }
-func (m *Balance) String() string            { return proto.CompactTextString(m) }
-func (*Balance) ProtoMessage()               {}
-func (*Balance) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
+func (m *Balance) Reset()         { *m = Balance{} }
+func (m *Balance) String() string { return proto.CompactTextString(m) }
+func (*Balance) ProtoMessage()    {}
+func (*Balance) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ee25a00b628521b1, []int{1}
+}
+
+func (m *Balance) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Balance.Unmarshal(m, b)
+}
+func (m *Balance) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Balance.Marshal(b, m, deterministic)
+}
+func (m *Balance) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Balance.Merge(m, src)
+}
+func (m *Balance) XXX_Size() int {
+	return xxx_messageInfo_Balance.Size(m)
+}
+func (m *Balance) XXX_DiscardUnknown() {
+	xxx_messageInfo_Balance.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Balance proto.InternalMessageInfo
 
 func (m *Balance) GetUserId() string {
 	if m != nil {
@@ -191,15 +253,15 @@ func (m *Balance) GetLinkedWallet() string {
 }
 
 func init() {
-	proto.RegisterType((*BalanceDetails)(nil), "pending_props_pb.BalanceDetails")
-	proto.RegisterType((*Balance)(nil), "pending_props_pb.Balance")
 	proto.RegisterEnum("pending_props_pb.BalanceType", BalanceType_name, BalanceType_value)
 	proto.RegisterEnum("pending_props_pb.UpdateType", UpdateType_name, UpdateType_value)
+	proto.RegisterType((*BalanceDetails)(nil), "pending_props_pb.BalanceDetails")
+	proto.RegisterType((*Balance)(nil), "pending_props_pb.Balance")
 }
 
-func init() { proto.RegisterFile("balance.proto", fileDescriptor3) }
+func init() { proto.RegisterFile("balance.proto", fileDescriptor_ee25a00b628521b1) }
 
-var fileDescriptor3 = []byte{
+var fileDescriptor_ee25a00b628521b1 = []byte{
 	// 451 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0x51, 0x6b, 0xdb, 0x30,
 	0x14, 0x85, 0xeb, 0x34, 0x75, 0x9a, 0x9b, 0xc4, 0x73, 0x05, 0xdb, 0x34, 0xe8, 0xc0, 0xa4, 0x0c,

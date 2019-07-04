@@ -24,6 +24,13 @@ type LastEthBlockUpdateReceipt struct {
 	BlockId     int64  `json:"blockId"`
 }
 
+type RewardEntityUpdateReceipt struct {
+	Name               string `json:"name"`
+	Address            string `json:"address"`
+	RewardsAddress     string `json:"rewardsAddress"`
+	SidechainAddress   string `json:"sidechainAddress"`
+}
+
 func GetTransactionReceipt(transactionType, address,  recipient, application string, amount big.Int) *NewTransactionReceipt {
 	return &NewTransactionReceipt{transactionType, address,  recipient, application, amount}
 }
@@ -34,4 +41,8 @@ func GetBalanceUpdateReceipt(address,  recipient, application string, balance bi
 
 func GetLastEthBlockUpdateReceipt(address string,  blockId int64) *LastEthBlockUpdateReceipt {
 	return &LastEthBlockUpdateReceipt{address,  blockId}
+}
+
+func GetRewardEntityUpdateReceipt(name, address, rewardsAddress, sidechainAddress string) *RewardEntityUpdateReceipt {
+	return &RewardEntityUpdateReceipt{name, address, rewardsAddress, sidechainAddress }
 }

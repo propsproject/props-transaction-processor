@@ -4,6 +4,7 @@ import "payload.proto";
 import "balance.proto";
 import "users.proto";
 import "transaction.proto";
+import "reward_entities.proto";
 
 enum EventType {
     EarningIssued = 0;
@@ -14,6 +15,7 @@ enum EventType {
     WalletLinked = 5;
     WalletUnlinked = 6;
     TransactionAdded = 7;
+    RewardEntityUpdated = 8;
 }
 
 message TransactionEvent {
@@ -46,4 +48,9 @@ message WalletUnlinkedEvent {
     ApplicationUser user = 1;
     WalletToUser walletToUsers = 2;
     string message = 3;
+}
+
+message RewardEntityUpdateEvent {
+    RewardEntity entity = 1;
+    string message = 2;
 }

@@ -3,26 +3,57 @@
 
 package pending_props_pb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+
 type ActivityLog struct {
-	UserId        string `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
-	ApplicationId string `protobuf:"bytes,2,opt,name=application_id,json=applicationId" json:"application_id,omitempty"`
-	Date          int32  `protobuf:"varint,3,opt,name=date" json:"date,omitempty"`
-	Timestamp     int64  `protobuf:"varint,4,opt,name=timestamp" json:"timestamp,omitempty"`
+	UserId               string   `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ApplicationId        string   `protobuf:"bytes,2,opt,name=application_id,json=applicationId,proto3" json:"application_id,omitempty"`
+	Date                 int32    `protobuf:"varint,3,opt,name=date,proto3" json:"date,omitempty"`
+	Timestamp            int64    `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ActivityLog) Reset()                    { *m = ActivityLog{} }
-func (m *ActivityLog) String() string            { return proto.CompactTextString(m) }
-func (*ActivityLog) ProtoMessage()               {}
-func (*ActivityLog) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
+func (m *ActivityLog) Reset()         { *m = ActivityLog{} }
+func (m *ActivityLog) String() string { return proto.CompactTextString(m) }
+func (*ActivityLog) ProtoMessage()    {}
+func (*ActivityLog) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a684c9a0549e7832, []int{0}
+}
+
+func (m *ActivityLog) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ActivityLog.Unmarshal(m, b)
+}
+func (m *ActivityLog) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ActivityLog.Marshal(b, m, deterministic)
+}
+func (m *ActivityLog) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ActivityLog.Merge(m, src)
+}
+func (m *ActivityLog) XXX_Size() int {
+	return xxx_messageInfo_ActivityLog.Size(m)
+}
+func (m *ActivityLog) XXX_DiscardUnknown() {
+	xxx_messageInfo_ActivityLog.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ActivityLog proto.InternalMessageInfo
 
 func (m *ActivityLog) GetUserId() string {
 	if m != nil {
@@ -56,9 +87,9 @@ func init() {
 	proto.RegisterType((*ActivityLog)(nil), "pending_props_pb.ActivityLog")
 }
 
-func init() { proto.RegisterFile("activity.proto", fileDescriptor5) }
+func init() { proto.RegisterFile("activity.proto", fileDescriptor_a684c9a0549e7832) }
 
-var fileDescriptor5 = []byte{
+var fileDescriptor_a684c9a0549e7832 = []byte{
 	// 159 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4b, 0x4c, 0x2e, 0xc9,
 	0x2c, 0xcb, 0x2c, 0xa9, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x28, 0x48, 0xcd, 0x4b,
