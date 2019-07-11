@@ -27,26 +27,25 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	var settledApplicationUser *pending_props_pb.ApplicationUser
 	var settledAmount *big.Int
 	if err == nil && len(string(existingTxStateData[updateBalanceTransactionAddress])) == 0 {
-		logger.Infof(fmt.Sprintf("Error / Not Found while getting state updateBalanceTransactionAddress %v, %v", updateBalanceTransactionAddress, err))
+		logger.Infof(fmt.Sprintf("Error / Not Found while getting state updateBalanceTransactionAddress %v, %v (balanceUpdate for %v)", updateBalanceTransactionAddress, err, balanceUpdate.GetPublicAddress()))
 		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"))
 		if err != nil {
 			logger.Infof("Could not connect to main-chain to verify balance update %v",err)
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify balance update (%s)", err)}
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify balance update (%s) (balanceUpdate for %v)", err,  balanceUpdate.GetPublicAddress())}
 		}
 		latestHeader, err := token.RPC.HeaderByNumber(context.Background(), nil)
 		if err != nil {
-			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err)
+			logger.Infof("Could not get current blockId on main-chain to verify balance update %v (balanceUpdate for %v)",err, balanceUpdate.GetPublicAddress())
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
 		latestBlockId := latestHeader.Number
 		if latestBlockId.Cmp(big.NewInt(0)) <= 0 {
-			logger.Infof("Could not get current blockId on main-chain to verify balance update %v",err)
+			logger.Infof("Could not get current blockId on main-chain to verify balance update %v (balanceUpdate for %v)",err,balanceUpdate.GetPublicAddress())
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
-		logger.Infof("Latest Block on main-chain is %v", latestBlockId.String())
+		logger.Infof("Latest Block on main-chain is %v (balanceUpdate for %v)", latestBlockId.String(), balanceUpdate.GetPublicAddress())
 		confirmationBlocks := big.NewInt(viper.GetInt64("ethereum_confirmation_blocks"))
 		if latestBlockId.Cmp(big.NewInt(0).Add(confirmationBlocks, big.NewInt(balanceUpdate.GetBlockId()))) >= 0 {
-			logger.Infof("Enough blocks (%v) passed submitted=%v,current=%v", confirmationBlocks, balanceUpdate.GetBlockId(), latestBlockId)
 			// check details are correct looking up the transaction transfer details
 			_transferDetails, transferBlockId, err := eth_utils.GetEthTransactionTransferDetails(eth_utils.NormalizeAddress(balanceUpdate.GetTxHash()), eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()), token, false)
 			if err == nil && transferBlockId > 0 {
@@ -476,14 +475,17 @@ func (s * State) GetBalanceByApplicationUser(applicationUser pending_props_pb.Ap
 func (s *State) SaveBalanceUpdate(balanceUpdates ...pending_props_pb.BalanceUpdate) error {
 	stateUpdate := make(map[string][]byte)
 	for _, balanceUpdate := range balanceUpdates {
+		logger.Infof("SaveBalanceUpdate: Received balance update for %v, %v", balanceUpdate.GetPublicAddress(), balanceUpdate.GetOnchainBalance())
 		err := s.UpdateBalanceFromMainchainEvent(balanceUpdate, stateUpdate)
 
 		if err != nil {
 			errMsg := err.Error()
 			if strings.Index(errMsg,"TransactionHashAlreadyExists") >= 0 {
+				logger.Infof("SaveBalanceUpdate: TransactionHashAlreadyExists: %v", err)
 				return nil
 			} else
 			{
+				logger.Infof("SaveBalanceUpdate: Invalid transaction: %v", err)
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Error verifying transaction  (%v)", err)}
 			}
 		}

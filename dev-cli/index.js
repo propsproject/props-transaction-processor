@@ -97,6 +97,13 @@ cli
        } catch (e) {
            logger.error(`error logging activity: ${e}`);
        }
+    })
+    .command('balance-address', 'Get balance address')
+    .argument('<application>', 'UDID of an authorized application')
+    .argument('<user>', 'UDID of an authorized application user')
+    .action((args, options, logger) => {
+        const application = args.application == 0 ? '': args.application;
+        logger.info(pendingProps.CONFIG.earnings.namespaces.balanceAddress(application, args.user));
     });
 
 const banner = figlet.textSync('props-chain-cli', {

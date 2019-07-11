@@ -891,6 +891,7 @@ const calcDay = function(secondsInDay) {
     return ret;
 }
 
+
 module.exports = {
     transaction,
     externalBalanceUpdate,
