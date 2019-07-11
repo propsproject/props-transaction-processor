@@ -8,7 +8,7 @@ import (
 	"github.com/propsproject/goprops-toolkit/propstoken/bindings/token"
 	"github.com/propsproject/props-transaction-processor/core/eth-utils"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
-	"github.com/propsproject/sawtooth-go-sdk/processor"
+	"github.com/hyperledger/sawtooth-sdk-go/processor"
 	"github.com/spf13/viper"
 	"math/big"
 	"strings"
@@ -67,7 +67,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 				}
 
 				// is the transfer from a settlement address?
-				settlementFromAddresses := viper.GetStringMapString("settlement_from_addresses")
+				settlementFromAddresses := viper.GetStringMapString("settlement_from_addresses_map")
 				if transferFromAppId, ok := settlementFromAddresses[eth_utils.NormalizeAddress(_transferDetails.From.String())]; ok {
 					// does the transfer to address linked to any user?
 					walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: eth_utils.NormalizeAddress(_transferDetails.To.String())})

@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/propsproject/props-transaction-processor/core/eth-utils"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
-	"github.com/propsproject/sawtooth-go-sdk/logging"
+	"github.com/hyperledger/sawtooth-sdk-go/logging"
 )
 
 var logger = logging.Get()

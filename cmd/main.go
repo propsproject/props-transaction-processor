@@ -1,18 +1,21 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/propsproject/props-transaction-processor/core"
-	"github.com/propsproject/sawtooth-go-sdk/logging"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-var logger *logging.Logger = logging.Get()
+var atom = zap.NewAtomicLevel()
+var encoderCfg = zap.NewProductionEncoderConfig()
+var logger *zap.SugaredLogger
 
 func main() {
 	pflag.StringP("verbose", "v", "debug", "Log verbosity info|warning|debug")
@@ -28,29 +31,42 @@ func main() {
 		viper.BindPFlag( "config-file-path", pflag.Lookup("config-file-path"))
 		err := parseConfigFile()
 		if err != nil {
-			logger.Error("error parsing configuration file:  ", err)
+			logger.Errorf("error parsing configuration file:  ", err)
 			os.Exit(1)
 		}
 	} else {
 		viper.BindPFlags(pflag.CommandLine)
 	}
 
-	switch viper.GetString("verbose") {
-	case "debug":
-		logger.SetLevel(logging.DEBUG)
-	case "info":
-		logger.SetLevel(logging.INFO)
-	default:
-		logger.SetLevel(logging.WARN)
-	}
+	encoderCfg.TimeKey = "timestamp"
+	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	atom.SetLevel(zap.DebugLevel)
+
+	var tmpLogger = zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.Lock(os.Stdout),
+		atom,
+	))
+
+	tmpLogger = tmpLogger.With(
+		zap.String("app", viper.GetString("app")),
+		zap.String("name", viper.GetString("name")),
+		zap.String("env", viper.GetString("environment")),
+	)
+
+	defer tmpLogger.Sync()
+
+	logger = tmpLogger.Sugar()
+
+	logger.Info("Starting the transaction processor")
 
 	// Set some default values in the logger
-	logger.SetDefaultKeyValues(zap.String("app", viper.GetString("app")), zap.String("name", viper.GetString("name")), zap.String("env", viper.GetString("environment")))
+	//logger.SetDefaultKeyValues(zap.String("app", viper.GetString("app")), zap.String("name", viper.GetString("name")), zap.String("env", viper.GetString("environment")))
 
 	tp := core.NewTransactionProcessor(viper.GetString("validator_url"))
 	err := tp.Start()
 	if err != nil {
-		logger.Error("Processor stopped: ", err)
+		logger.Errorf("Processor stopped: ", err)
 	}
 }
 
@@ -80,6 +96,20 @@ func parseConfigFile() error {
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("error reading configuration file: (%s)", err)
 	}
+	// parse json values back into viper
+	var settlementAddressJson map[string]interface{}
+	var validSignersJson map[string]interface{}
+	err1 := json.Unmarshal([]byte(viper.GetString("settlement_from_addresses")),&settlementAddressJson)
+	if err1 != nil {
+		return fmt.Errorf("error reading configuration file settlement_from_addresses malformed: (%s)", err1)
+	}
+	viper.Set("settlement_from_addresses_map", settlementAddressJson)
+	err2 := json.Unmarshal([]byte(viper.GetString("valid_signers_addresses")),&validSignersJson)
+	if err2 != nil {
+		return fmt.Errorf("error reading configuration file settlement_from_addresses malformed: (%s)", err2)
+	}
+	viper.Set("valid_signers_addresses_map", validSignersJson)
+
 
 	return nil
 }
