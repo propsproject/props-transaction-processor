@@ -21,7 +21,7 @@ type TransferDetails struct {
 }
 
 func GetEthTransactionTransferDetails(transactionHash string, address string, client *propstoken.Client, settlement bool) (*TransferDetails, uint64, error) {
-	logging.Get().Infof("GetEthTransactionTransferDetails TransactionHash %s", transactionHash)
+	logging.Get().Infof("GetEthTransactionTransferDetails TransactionHash %s ((balanceUpdate for %v)", transactionHash, address)
 	transaction, err := client.RPC.TransactionReceipt(context.Background(), common.HexToHash(transactionHash))
 	if err != nil {
 		return nil, 0, fmt.Errorf("unable to get transaction receipt for hash (%s)", err)
@@ -33,13 +33,15 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 		if sig == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" { // only if matches Transfer signature keccak256(Transfer(address,address,uint256))
 			from := fmt.Sprintf("0x%v", topics[1].Hex()[26:])
 			to := fmt.Sprintf("0x%v", topics[2].Hex()[26:])
+			logging.Get().Infof("GetEthTransactionTransferDetails checking addresses from=0x%v, to=0x%v address=%v", from, to, address)
 			if (address == from && !settlement) || address == to {
 
 			} else {
 				if (from == "0x0000000000000000000000000000000000000000" && to != address) || (to == "0x0000000000000000000000000000000000000000" && from != address) {
+					logging.Get().Infof("GetEthTransactionTransferDetails skipping due to from/to address being 0 (balanceUpdate for %v)", address)
 					continue
 				}
-
+				logging.Get().Infof("transaction %v address does not match reported balance update address %v, %v do not match %v", transactionHash, from, to, address)
 				return nil, 0, fmt.Errorf("transaction %v address does not match reported balance update address %v, %v do not match %v", transactionHash, from, to, address)
 			}
 
@@ -49,6 +51,7 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 			}
 			balance, err := client.Token.BalanceOf(&callOptions, common.HexToAddress(address))
 			if err != nil {
+				logging.Get().Infof("unable to get balanceOf %v on block %v (%s)", address, log.BlockNumber, err)
 				return nil, 0, fmt.Errorf("unable to get balanceOf %v on block %v (%s)", address, log.BlockNumber, err)
 			} else {
 				logging.Get().Infof("GetEthTransactionTransferDetails balance %v blockNumber %v (log.BlockNumber %v)", balance.String(), callOptions.BlockNumber.String(), log.BlockNumber)
@@ -61,9 +64,12 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 				From: common.HexToAddress(from),
 				To: common.HexToAddress(to),
 			}
+			logging.Get().Infof("GetEthTransactionTransferDetails got transfer details amount=%v (balanceUpdate for %v)", transferDetails.Amount.String(), address)
 			return &transferDetails, log.BlockNumber, nil
+		} else {
+			logging.Get().Infof("GetEthTransactionTransferDetails signature didn't match transfer got sig=%v (balanceUpdate for %v)", sig, address)
 		}
 	}
-
+	logging.Get().Infof("unable to get TransferDetails data from transaction (%s) (balanceUpdate for %v)", transactionHash, address)
 	return nil, 0, fmt.Errorf("unable to get TransferDetails data from transaction (%s)", transactionHash)
 }

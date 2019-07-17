@@ -7,13 +7,15 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-var myLogger, _ = zap.NewProduction()
-var logger = myLogger.Sugar()
+var atom = zap.NewAtomicLevel()
+var encoderCfg = zap.NewProductionEncoderConfig()
+var logger *zap.SugaredLogger
 
 func main() {
 	pflag.StringP("verbose", "v", "debug", "Log verbosity info|warning|debug")
@@ -36,13 +38,27 @@ func main() {
 		viper.BindPFlags(pflag.CommandLine)
 	}
 
-	logger = logger.With(
+	encoderCfg.TimeKey = "timestamp"
+	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	atom.SetLevel(zap.DebugLevel)
+
+	var tmpLogger = zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.Lock(os.Stdout),
+		atom,
+	))
+
+	tmpLogger = tmpLogger.With(
 		zap.String("app", viper.GetString("app")),
 		zap.String("name", viper.GetString("name")),
 		zap.String("env", viper.GetString("environment")),
 	)
 
-	logger.Infof("Starting the transaction processor")
+	defer tmpLogger.Sync()
+
+	logger = tmpLogger.Sugar()
+
+	logger.Info("Starting the transaction processor")
 
 	// Set some default values in the logger
 	//logger.SetDefaultKeyValues(zap.String("app", viper.GetString("app")), zap.String("name", viper.GetString("name")), zap.String("env", viper.GetString("environment")))
