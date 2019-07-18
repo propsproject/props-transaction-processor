@@ -97,7 +97,7 @@ const CONFIG = {
         familyVersion: "1.0",
         namespaces: {
             prefixes: {
-                "settlements": createHash('sha512')
+                "settlement": createHash('sha512')
                     .update("pending-props:earnings:settlements")
                     .digest('hex')
                     .substring(0, 6),
@@ -125,15 +125,38 @@ const CONFIG = {
                     .update("pending-props:earnings:activity_log")
                     .digest('hex')
                     .substring(0,6),
+                "rewardEntity": createHash('sha512')
+                    .update("pending-props:earnings:rewardentity")
+                    .digest('hex')
+                    .substring(0,6),
             },
-            settlementAddress(ethereumTxtHash) {
-                const prefix = this.prefixes.settlements;
-                const postfix = createHash('sha512')
-                    .update(`${normalizeAddress(ethereumTxtHash)}`)
+            rewardEntityAddressBySidechainAddress(address, type) {
+                const prefix = this.prefixes.rewardEntity;
+                const part1 = createHash('sha512')
+                    .update(`${normalizeAddress(address)}`)
                     .digest('hex')
                     .toLowerCase()
-                    .substring(0, 64);
-                return `${prefix}${postfix}`
+                    .substring(0, 60);
+                const part2 = createHash('sha512')
+                    .update(`${type}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 4);
+                return `${prefix}${part1}${part2}`
+            },
+            rewardEntityAddressByRewardsAddress(address, type) {
+                const prefix = this.prefixes.rewardEntity;
+                const part1 = createHash('sha512')
+                    .update(`${normalizeAddress(address)}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 60);
+                const part2 = createHash('sha512')
+                    .update(`${type}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 4);
+                return `${prefix}${part1}${part2}`
             },
             transactionAddress(type, applicationId, userId, timestamp) {
                 const prefix = this.prefixes.transaction
@@ -177,6 +200,15 @@ const CONFIG = {
                 const prefix = this.prefixes.walletLink;
                 const body = createHash('sha512')
                     .update(`${address}`)
+                    .digest('hex')
+                    .toLowerCase()
+                    .substring(0, 64);
+                return `${prefix}${body}`
+            },
+            settlementAddress(txHash) {
+                const prefix = this.prefixes.settlement;
+                const body = createHash('sha512')
+                    .update(`${txHash}`)
                     .digest('hex')
                     .toLowerCase()
                     .substring(0, 64);
@@ -243,7 +275,7 @@ const newRPCRequest = (params, method) => {
     return payload;
 };
 
-const externalBalanceUpdate = async (address, balance, ethTransactionHash, blockId, timestamp, addresses = {}) => {
+const externalBalanceUpdate = async (address, fromAddress, balance, ethTransactionHash, blockId, timestamp, addresses = {}) => {
     address = normalizeAddress(address);
     const txHash = normalizeAddress(ethTransactionHash);
     const balanceUpdate = new balance_pb.BalanceUpdate();
@@ -428,6 +460,135 @@ const linkWallet = async (address, applicationId, userId, signature) => {
         .finish();
 
     // console.log(colors.yellow(`balance state addresses: recipientBalanceAddress:${recipientBalanceAddress} fromBalanceAddress:${fromBalanceAddress} ${balanceTimestampAddressPrefix}`));
+    return await submitTransaction(transactionHeaderBytes, requestBytes);
+};
+// await pendingProps.settle(args.application, args.user, args.amount, args.toaddress, args.fromaddress, args.ethtransactionhash, args.blockid, args.timestamp);
+const settle = async (applicationId, userId, amount, toAddress, fromAddress, txHash, blockId, timestamp, addresses = {}) => {
+
+    /*
+
+    msg.setApplicationId(value);
+
+    msg.setUserId(value);
+
+    msg.setAmount(value);
+
+    msg.setToAddress(value);
+
+    msg.setFromAddress(value);
+
+    msg.setTxHash(value);
+
+    msg.setBlockId(value);
+
+    msg.setTimestamp(value);
+     */
+    const settlementData = new payloads_pb.SettlementData();
+    settlementData.setApplicationId(applicationId);
+    settlementData.setUserId(userId);
+    const propsAmount = new BigNumber(amount, 10);
+    const tokensAmount = propsAmount.times(1e18);
+    settlementData.setAmount(tokensAmount.toString());
+    settlementData.setToAddress(toAddress);
+    settlementData.setFromAddress(fromAddress);
+    settlementData.setTxHash(txHash);
+    settlementData.setBlockId(blockId);
+    settlementData.setTimestamp(timestamp);
+
+    //setup RPC request
+    const params = new any.Any();
+    params.setValue(settlementData.serializeBinary());
+    params.setTypeUrl('github.com/propsproject/props-transaction-processor/protos/pending_props_pb.SettlementData');
+
+    const request = newRPCRequest(params, payloads_pb.Method.SETTLEMENT);
+    const requestBytes = request.serializeBinary();
+
+    // compute state address
+    const stateAddress = CONFIG
+        .earnings
+        .namespaces
+        .transactionAddress(transactionTypes.SETTLE, applicationId, userId, timestamp);
+
+    // compute balance and balaneTimestamp addresses for outputs
+    const balanceAddress = CONFIG
+        .earnings
+        .namespaces
+        .balanceAddress(applicationId, userId);
+
+    const settlementAddress = CONFIG
+        .earnings
+        .namespaces
+        .settlementAddress(txHash);
+
+    // check if user balance is linked to a wallet
+    const balance = await getLinkedWalletFromBalanceAddress(balanceAddress);
+    const linkedWalletAddress = (balance[0]===undefined || !('linkedWallet' in balance[0])) ? "" : balance[0].linkedWallet;
+    const linkedApplicationUserAddresses = []
+    if (linkedWalletAddress.length > 0) {
+        const walletLinkAddress = CONFIG
+            .earnings
+            .namespaces
+            .walletLinkAddress(linkedWalletAddress);
+
+        const walletBalanceAddress = CONFIG
+            .earnings
+            .namespaces
+            .balanceAddress("", linkedWalletAddress);
+        const linkedApplicationUsers = await getLinkedUsersFromWalletLinkAddress(walletLinkAddress);
+        linkedApplicationUserAddresses.push(walletLinkAddress);
+        linkedApplicationUserAddresses.push(walletBalanceAddress);
+        log(`linkedApplicationUsers ${JSON.stringify(linkedApplicationUsers)}`);
+        if (linkedApplicationUsers.length > 0) {
+            for (let i = 0; i < linkedApplicationUsers[0].usersList.length; ++i) {
+                const linkedBalanceAddress = CONFIG
+                    .earnings
+                    .namespaces
+                    .balanceAddress(linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
+                if (linkedBalanceAddress != balanceAddress) {
+                    linkedApplicationUserAddresses.push(linkedBalanceAddress);
+                }
+            }
+            log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
+        }
+    }
+    log(JSON.stringify(linkedApplicationUserAddresses));
+    log("Settlement Address = "+settlementAddress)
+    log("Transaction Address = "+stateAddress);
+    log("Balance Address = "+balanceAddress);
+    const inputs = [stateAddress, balanceAddress, settlementAddress,  ...linkedApplicationUserAddresses];
+    const outputs = [stateAddress, balanceAddress, settlementAddress, ...linkedApplicationUserAddresses];
+    addresses['stateAddress'] = stateAddress;
+    addresses['balanceAddress'] = balanceAddress;
+    addresses['linkedApplicationUserAddresses'] = linkedApplicationUserAddresses;
+    // do the sawtooth thang ;)
+    const transactionHeaderBytes = protobuf
+        .TransactionHeader
+        .encode({
+            familyName: CONFIG.earnings.familyName,
+            familyVersion: CONFIG.earnings.familyVersion,
+            inputs: inputs,
+            outputs: outputs,
+            signerPublicKey: signer
+                .getPublicKey()
+                .asHex(),
+            // In this example, we're signing the batch with the same private key, but the
+            // batch can be signed by another party, in which case, the public key will need
+            // to be associated with that key.
+            batcherPublicKey: signer
+                .getPublicKey()
+                .asHex(),
+            // In this example, there are no dependencies.  This list should include an
+            // previous transaction header signatures that must be applied for this
+            // transaction to successfully commit. For example, dependencies:
+            // ['540a6803971d1880ec73a96cb97815a95d374cbad5d865925e5aa0432fcf1931539afe10310c
+            // 122c5eaae15df61236079abbf4f258889359c4d175516934484a'],
+            dependencies: [],
+            payloadSha512: createHash('sha512')
+                .update(requestBytes)
+                .digest('hex')
+        })
+        .finish();
+
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 
@@ -715,7 +876,9 @@ const queryState = async (address, t) => {
             return deserializeWalletLink(data);
         } else if (t === "activity") {
             return deserializeActivity(data)
-        } else {
+        } else if (t === "settlement") {
+            return deserializeSettlement(data)
+        }else {
             log(`unknown state type ${t} expected earning or settlements`);
         }
 
@@ -771,6 +934,19 @@ const deserializeWalletLink = (data) => {
     });
     return retData;
 };
+
+const deserializeSettlement = (data) => {
+    const retData = []
+    data.forEach(entry => {
+        const bytes = new Uint8Array(Buffer.from(entry.data, 'base64'));
+        const settlementData = new payloads_pb
+            .SettlementData
+            .deserializeBinary(bytes);
+        retData.push(settlementData.toObject());
+        log(prettyjson.render(settlementData.toObject()));
+    });
+    return retData;
+}
 
 const deserializeLastEthBlockId = (data) => {
     const retData = []
@@ -901,6 +1077,7 @@ const calcDay = function(secondsInDay) {
 
 module.exports = {
     transaction,
+    settle
     externalBalanceUpdate,
     queryState,
     updateLastBlockId,

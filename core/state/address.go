@@ -113,6 +113,10 @@ func BalanceUpdatesTransactionHashAddress(ethTxHash string, address string) (str
 	return NewAddress(NamespaceManager.BalanceUpdatesTransactionHashPrefix()).AddParts(NewPart(eth_utils.NormalizeAddress(ethTxHash), 0, 40),NewPart(eth_utils.NormalizeAddress(address), 0, 24)).Build(false)
 }
 
+func SettlementAddress(ethTxHash string) (string, int) {
+	return NewAddress(NamespaceManager.SettlementPrefix()).AddParts(NewPart(eth_utils.NormalizeAddress(ethTxHash), 0, 64)).Build(false)
+}
+
 func LastEthBlockAddress() (string, int) {
 	return NewAddress(NamespaceManager.LastEthBlockPrefix()).AddParts(NewPart("LastEthBlockAddress", 0, 64)).Build(false)
 }

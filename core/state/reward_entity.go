@@ -4,43 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/hyperledger/sawtooth-sdk-go/logging"
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
-	"strconv"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 )
-
-func (s *State) SaveRewardEntity(rewardEntityUpdate pending_props_pb.RewardEntity) (error, *pending_props_pb.RewardEntity) {
-	rewardEntityAddress, _ := RewardEntityAddress(rewardEntityUpdate)
-
-
-	if err != nil {
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Unable to get state of ethblockaddress %v", ethBlockAddress)}, nil
-	}
-
-	if len(string(existingLastEthBlockData[ethBlockAddress])) == 0 {
-		logger.Infof("Error / Not Found while getting state ethBlockAddress %v, %v", ethBlockAddress, err)
-		newLastEthBlock := pending_props_pb.LastEthBlock{
-			Id: blockUpdate.GetId(),
-			Timestamp: blockUpdate.GetTimestamp(),
-		}
-		lastEthBlockData = newLastEthBlock
-	} else {
-		// update existing last eth block
-		for _, value := range existingLastEthBlockData {
-
-			err := proto.Unmarshal(value, &lastEthBlockData)
-			if err != nil {
-				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal proto (lastEthBlockData) data (%s)", err)}, nil
-			}
-		}
-		if lastEthBlockData.GetId() > blockUpdate.GetId() {
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("last block can be smaller than previouly stored one %v > %v", lastEthBlockData.GetId(), blockUpdate.GetId())}, nil
-		}
-	}
-	return nil, &blockUpdate
-}
-
 
 func (s *State) SaveRewardEntity(rewardEntityUpdates ...pending_props_pb.RewardEntity) error {
 	stateUpdate := make(map[string][]byte)
@@ -76,7 +43,7 @@ func (s *State) SaveRewardEntity(rewardEntityUpdates ...pending_props_pb.RewardE
 			processor.Attribute{"rewards_address", rewardEntityUpdate.GetRewardsAddress()},
 			processor.Attribute{"sidechain_address", rewardEntityUpdate.GetSidechainAddress()},
 		}
-		s.AddLastEthBlockUpdateEvent(rewardEntityUpdateEvent, "pending-props:rewardentityupdate", rewardEntityUpdateAttr...)
+		s.AddRewardEntityUpdateEvent(rewardEntityUpdateEvent, "pending-props:rewardentityupdate", rewardEntityUpdateAttr...)
 	}
 
 	_, err := s.context.SetState(stateUpdate)

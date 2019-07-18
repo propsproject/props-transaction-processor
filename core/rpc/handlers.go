@@ -57,5 +57,5 @@ func (r *RPCClient) delegate(request *processor_pb2.TpProcessRequest, context *p
 
 func NewClient() *RPCClient {
 	client := &RPCClient{make(map[string]*MethodHandler)}
-	return client.registerMethod(ISSUE).registerMethod(REVOKE).registerMethod(SETTLE).registerMethod(BALANCE_UPDATE).registerMethod(ETH_LAST_BLOCK_UPDATE).registerMethod(WALLET_LINK).registerMethod(ACTIVITY_LOG).registerMethod(REWARD_ENTITY_UPDATE)
+	return client.registerMethod(ISSUE).registerMethod(REVOKE).registerMethod(SETTLE).registerMethod(BALANCE_UPDATE).registerMethod(ETH_LAST_BLOCK_UPDATE).registerMethod(WALLET_LINK).registerMethod(ACTIVITY_LOG).registerMethod(REWARD_ENTITY_UPDATE).registerMethod(SETTLEMENT)
 }

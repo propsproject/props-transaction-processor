@@ -76,6 +76,24 @@ cli
             logger.error(`error updating external balance: ${e}`)
         }
     })
+    .command('settle', 'settle props to a recipient')
+    .argument('<application>', 'UDID of an authorized application')
+    .argument('<user>', 'UDID of an authorized application user')
+    .argument('<amount>', 'amount of props to issue in earning')
+    .argument('<toaddress>', 'amount of props to issue in earning')
+    .argument('<fromaddress>', 'amount of props to issue in earning')
+    .argument('<ethtransactionhash>', 'amount of props to issue in earning')
+    .argument('<blockid>', 'amount of props to issue in earning')
+    .argument('<timestamp>', 'amount of props to issue in earning')
+    .action(async (args, options, logger) => {
+        logger.info(`settling props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}, 
+        with txHash ${args.ethtransactionhash} (blockId: ${args.blockid}, timestamp: ${args.timestamp}, to: ${args.toaddress}, from: ${args.fromaddress})`);
+        try {
+            await pendingProps.settle(args.application, args.user, args.amount, args.toaddress, args.fromaddress, args.ethtransactionhash, args.blockid, args.timestamp);
+        } catch (e) {
+            logger.error(`error settling: ${e}`)
+        }
+    })
     .command('state-query', 'get transaction(s) or balance(s) etc. from the state')
     .argument('<stateaddress>', 'state address for query')
     .argument('<t>', 'state type')

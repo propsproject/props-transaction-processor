@@ -171,7 +171,7 @@ func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) e
 
 			newApplicationUserBalance.BalanceDetails.Timestamp = walletToUser.GetUsers()[0].Timestamp
 			newApplicationUserBalance.LinkedWallet = walletBalance.GetUserId()
-			err1 := s.UpdateLinkedWalletBalances(walletToUserData.Users, *newApplicationUserBalance, false, stateUpdate, nil, nil)
+			err1 := s.UpdateLinkedWalletBalances(walletToUserData.Users, *newApplicationUserBalance, false, stateUpdate)
 			if err1 != nil {
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not save balances of linked wallet data (%s)", err1)}
 			}
@@ -210,7 +210,7 @@ func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) e
 	return nil
 }
 
-func (s *State) UpdateLinkedWalletBalances(applicationUsers []*pending_props_pb.ApplicationUser, balance pending_props_pb.Balance, onchainOnly bool, updates map[string][]byte, settledApplicationUser *pending_props_pb.ApplicationUser, settledAmount *big.Int) error {
+func (s *State) UpdateLinkedWalletBalances(applicationUsers []*pending_props_pb.ApplicationUser, balance pending_props_pb.Balance, onchainOnly bool, updates map[string][]byte) error {
 	for _, applicationUser := range applicationUsers {
 		applicationUserBalanceAddress, applicationUserBalance, newBalanceCreated, err := s.GetBalanceByApplicationUser(pending_props_pb.ApplicationUser{UserId:applicationUser.GetUserId(), ApplicationId:applicationUser.GetApplicationId()})
 		if err != nil {
@@ -242,16 +242,6 @@ func (s *State) UpdateLinkedWalletBalances(applicationUsers []*pending_props_pb.
 			applicationUserBalance.BalanceDetails.Timestamp = balance.GetBalanceDetails().GetTimestamp()
 			applicationUserBalance.BalanceDetails.Transferable = balance.GetBalanceDetails().GetTransferable()
 			applicationUserBalance.BalanceDetails.LastUpdateType = balance.GetBalanceDetails().GetLastUpdateType()
-			if settledApplicationUser != nil {
-				applicationUserBalance.BalanceDetails.TotalPending = balance.BalanceDetails.GetTotalPending()
-				if applicationUser.GetApplicationId() == settledApplicationUser.GetApplicationId() && applicationUser.GetUserId() == settledApplicationUser.GetUserId() {
-					pending, ok := new(big.Int).SetString(applicationUserBalance.GetBalanceDetails().GetPending(), 10)
-					if !ok {
-						return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could convert applicationUserBalance.GetBalanceDetails().GetPending() to big.Int (%s)", applicationUserBalance.GetBalanceDetails().GetPending())}
-					}
-					applicationUserBalance.BalanceDetails.Pending = pending.Sub(pending, settledAmount).String()
-				}
-			}
 
 		} else {
 			if applicationUser.GetUserId() == balance.GetUserId() && applicationUser.GetApplicationId() == balance.GetApplicationId() {

@@ -41,6 +41,16 @@ func decodeBalanceUpdateRequest(rpcReq *pending_props_pb.RPCRequest) (pending_pr
 	return balanceUpdate, nil
 }
 
+func decodeSettlementRequest(rpcReq *pending_props_pb.RPCRequest) (pending_props_pb.SettlementData, error) {
+	var settlementData pending_props_pb.SettlementData
+	err := getSettlementReqData(rpcReq.Params.GetData(), &settlementData)
+	if err != nil {
+		return settlementData, err
+	}
+	return settlementData, nil
+}
+
+
 func decodeLastEthBlockRequest(rpcReq *pending_props_pb.RPCRequest) (pending_props_pb.LastEthBlock, error) {
 	var lastEthBlock pending_props_pb.LastEthBlock
 	err := getLastBlockReqData(rpcReq.Params.GetData(), &lastEthBlock)
@@ -103,6 +113,16 @@ func getBalanceUpdateReqData(data *any.Any, balanceUpdate *pending_props_pb.Bala
 	}
 	return nil
 }
+
+func getSettlementReqData(data *any.Any, settlementData *pending_props_pb.SettlementData) error {
+	err := ptypes.UnmarshalAny(data, settlementData)
+	if err != nil {
+		return errors.New(fmt.Sprintf("could not unmarshal settlementData proto (%s)", err.Error()))
+	}
+	return nil
+}
+
+
 
 func getActivityLogReqData(data *any.Any, activity *pending_props_pb.ActivityLog) error {
 	err := ptypes.UnmarshalAny(data, activity)
