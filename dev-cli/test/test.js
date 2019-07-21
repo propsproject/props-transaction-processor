@@ -38,11 +38,6 @@ const txHash2 = "0x9ef12357191c917cbc3c8102c36948dc731b650852448c51f4705d0f30119
 const blockNum2 = "3966915";
 const timestamp2 = "1551632827";
 
-const settlementTxHash = "0xd0dae165cd740518faf212781e4a707a738970c030d7a3b27f04109ca607447e";
-const settlementAmount = 1; // which is 1e18 = 1000000000000000000
-const settlementBalanceAtBlock = "428511433000000000000000";
-const settlementTimestamp = "1553107867";
-const settlementBlockNum = "3967331";
 
 
 // remove pending-props.js logs
@@ -497,9 +492,84 @@ describe('Sawtooth side chain test', async () => {
         expect(userBalanceObj.applicationId).to.be.equal(app);
         expect(userBalanceObj.type).to.be.equal(0);
         expect(userBalanceObj.linkedWallet).to.be.equal(walletAddress);
+    });
+
+    it('Successfully settle a user via the contract settle event after issueing and linking a wallet to it', async() => {
+        const addresses = {};
+        const app1 = "0xa80a6946f8af393d422cd6feee9040c25121a3b8";
+        const user1 = "32f2be121e8b2efc4b04a45511412f60";
+        const user1Wallet = "0x2755ef71ec620348570bd8866045f97aca250ce1";
+        const app1user1Sig = "0xbf18182fc0f4c148795fb03cc30bf172f8becd5a8b5d6be4ed3b9d2370bb361d4bee6a12911cd38fab2d5b582192e7bbf5fd156db99ebd1dbd0a7b0c2879d1961c";
+
+        const settlementTxHash = "0x5645a41ccc7c7a757831369677dc1bc39d9c58b1cd8541e2306cfbbb32da0054";
+        const settlementAmount = 5; // which is 1e18 = 5000000000000000000
+        const settlementTimestamp = "1563692060";
+        const settlementBlockNum = "4770812";
+        const settlementApplicationRewardsAddress = "0xd8186f92ba7cc1991f6e3ab842cb50c29bbfdc6a";
 
 
+        // console.log('issue:', app1, user1, amounts[0], descriptions[0]);
+        // console.log('link:', user1Wallet, app1, user1, app1user1Sig);
+        // console.log('settle:', app1, user1, settlementAmount, user1Wallet, settlementApplicationRewardsAddress, settlementTxHash, settlementBlockNum, settlementTimestamp);
+        // process.exit(0);
+        await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0], descriptions[0], addresses);
 
+        await pendingProps.linkWallet(user1Wallet, app1, user1, app1user1Sig);
+
+        //const settle = async (applicationId, userId, amount, toAddress, fromAddress, txHash, blockId, timestamp, addresses = {}) => {
+        await pendingProps.settle(app1, user1, settlementAmount, user1Wallet, settlementApplicationRewardsAddress, settlementTxHash, settlementBlockNum, settlementTimestamp, addresses);
+
+
+        // wait a bit for it to be on chain
+        await waitUntil(() => {
+            const timePassed =  Math.floor(Date.now()) - global.timeOfStart;
+            // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
+            return (timePassed > (waitTimeUntilOnChain*longerTestWaitMultiplier*2))
+        }, 300000, 100);
+
+        const settleTransactionAddress = pendingProps.CONFIG
+            .earnings
+            .namespaces
+            .transactionAddress(pendingProps.transactionTypes.SETTLE, app1, user1, settlementTimestamp);
+        const earningOnChain = await pendingProps.queryState(settleTransactionAddress, 'transaction');
+        // console.log(JSON.stringify(earningOnChain));
+        const balanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app1, user1)
+        const balanceOnChain = await pendingProps.queryState(balanceAddress, 'balance');
+        const walletBalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", user1Wallet)
+        const walletBalanceOnChain = await pendingProps.queryState(walletBalanceAddress, 'balance');
+        //     // console.log(`balanceOnChain1=${JSON.stringify(balanceOnChain1)}`);
+        //     // console.log(`balanceOnChain2=${JSON.stringify(balanceOnChain2)}`);
+        //
+        const balanceObj = balanceOnChain[0];
+        const balanceDetails = balanceObj.balanceDetails;
+        const walletBalanceObj = walletBalanceOnChain[0];
+        const walletBalanceDetails = walletBalanceObj.balanceDetails;
+
+
+        const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
+        // expect earning details to be correct
+        expect(earningPropsAmount.div(1e18).toString()).to.be.equal(settlementAmount.toString());
+        expect(earningOnChain[0].transaction.userId).to.be.equal(user1);
+        expect(earningOnChain[0].transaction.applicationId).to.be.equal(app1);
+        expect(earningOnChain[0].transaction.description).to.be.equal('Settlement');
+        expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.SETTLE);
+        expect(earningOnChain[0].transaction.txHash).to.be.equal(settlementTxHash);
+        expect(earningOnChain[0].transaction.wallet).to.be.equal(user1Wallet);
+
+        const balancePendingAmount = new BigNumber(balanceDetails.pending, 10);
+        const balanceTotalPendingAmount = new BigNumber(balanceDetails.totalPending, 10);
+        const balanceTransferableAmount = new BigNumber(balanceDetails.transferable, 10);
+        const walletBalancePendingAmount = new BigNumber(walletBalanceDetails.pending, 10);
+        const walletBalanceTotalPendingAmount = new BigNumber(walletBalanceDetails.totalPending, 10);
+        const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
+
+        // expect balance details to be correct considering the linked wallet and previous issue
+        expect(balancePendingAmount.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(balanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(balanceTransferableAmount.toString()).to.be.equal("0");
+        expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
+        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0]-settlementAmount).toString());
+        expect(walletBalanceTransferableAmount.toString()).to.be.equal("0");
     });
 
     it('Successfully link another app user to same wallet', async() => {
@@ -744,83 +814,6 @@ describe('Sawtooth side chain test', async () => {
         expect(walletBalanceTotalPendingAmount.minus(walletPreCutoffBalanceTotalPendingAmount).div(1e18).toString()).to.be.equal(amounts[0].toString());
 
     });
-
-    it('Successfully settle a linked wallet with an external balance update with tx from being the rewardsAddress of the app (hardcoded in TP)', async() => {
-        const addresses = {};
-        const app1 = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
-        const user1 = "user1";
-        const app2 = "0x39dbb8ddeb0d0e86f17aa23d9dac4eeb69b76511";
-        const user2 = "user1";
-
-        /*
-        const settlementTxHash = "0xd0dae165cd740518faf212781e4a707a738970c030d7a3b27f04109ca607447e";
-        const settlementAmount = 1; // which is 1e18 = 1000000000000000000
-        const settlementBalanceAtBlock = "428511433000000000000000";
-        const settlementTimestamp = "1553107867";
-        const settlementBlockNum = "3967331";
-
-         */
-
-        await pendingProps.externalBalanceUpdate(walletAddress, settlementBalanceAtBlock, settlementTxHash, settlementBlockNum, settlementTimestamp, addresses);
-        global.timeOfStart = Math.floor(Date.now());
-        // wait a bit for it to be on chain
-        await waitUntil(() => {
-            const timePassed =  Math.floor(Date.now()) - global.timeOfStart;
-            // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
-            return (timePassed > (waitTimeUntilOnChain*longerTestWaitMultiplier*2))
-        }, 300000, 100);
-
-        const earningOnChain = await pendingProps.queryState(addresses['stateAddress'], 'transaction');
-            // console.log(JSON.stringify(earningOnChain));
-        const balanceAddress1 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app1, user1)
-        const balanceOnChain1 = await pendingProps.queryState(balanceAddress1, 'balance');
-        const balanceAddress2 = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app2, user2)
-        const balanceOnChain2 = await pendingProps.queryState(balanceAddress2, 'balance');
-        const walletBalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", walletAddress)
-        const walletBalanceOnChain = await pendingProps.queryState(walletBalanceAddress, 'balance');
-        //     // console.log(`balanceOnChain1=${JSON.stringify(balanceOnChain1)}`);
-        //     // console.log(`balanceOnChain2=${JSON.stringify(balanceOnChain2)}`);
-        //
-        const balanceObj1 = balanceOnChain1[0];
-        const balanceDetails1 = balanceObj1.balanceDetails;
-        const balanceObj2 = balanceOnChain2[0];
-        const balanceDetails2 = balanceObj2.balanceDetails;
-        const walletBalanceObj = walletBalanceOnChain[0];
-        const walletBalanceDetails = walletBalanceObj.balanceDetails;
-
-
-        const earningPropsAmount = new BigNumber(earningOnChain[0].transaction.amount, 10);
-        // expect earning details to be correct
-        expect(earningPropsAmount.div(1e18).toString()).to.be.equal(settlementAmount.toString());
-        expect(earningOnChain[0].transaction.userId).to.be.equal(user1);
-        expect(earningOnChain[0].transaction.applicationId).to.be.equal(app1);
-        expect(earningOnChain[0].transaction.description).to.be.equal('Settlement');
-        expect(earningOnChain[0].transaction.type).to.be.equal(pendingProps.transactionTypes.SETTLE);
-        expect(earningOnChain[0].transaction.txHash).to.be.equal(settlementTxHash);
-        expect(earningOnChain[0].transaction.wallet).to.be.equal(walletAddress);
-
-        const balancePendingAmount1 = new BigNumber(balanceDetails1.pending, 10);
-        const balancePendingAmount2 = new BigNumber(balanceDetails2.pending, 10);
-        const balanceTotalPendingAmount1 = new BigNumber(balanceDetails1.totalPending, 10);
-        const balanceTotalPendingAmount2 = new BigNumber(balanceDetails2.totalPending, 10);
-        const balanceTransferableAmount1 = new BigNumber(balanceDetails1.transferable, 10);
-        const balanceTransferableAmount2 = new BigNumber(balanceDetails2.transferable, 10);
-        const walletBalancePendingAmount = new BigNumber(walletBalanceDetails.pending, 10);
-        const walletBalanceTotalPendingAmount = new BigNumber(walletBalanceDetails.totalPending, 10);
-        const walletBalanceTransferableAmount = new BigNumber(walletBalanceDetails.transferable, 10);
-
-        // expect balance details to be correct considering the linked wallet
-        expect(balancePendingAmount1.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
-        expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
-        expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
-        expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
-        expect(balanceTransferableAmount1.toString()).to.be.equal(settlementBalanceAtBlock.toString());
-        expect(balanceTransferableAmount2.toString()).to.be.equal(settlementBalanceAtBlock.toString());
-        expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
-        expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal(((amounts[0]*3)-settlementAmount).toString());
-        expect(walletBalanceTransferableAmount.toString()).to.be.equal(settlementBalanceAtBlock.toString());
-    });
-
 
 
     // TODO - add more test for error scenarios such as replaying the same transaction, last eth block smaller than current, bad signatures, etc.

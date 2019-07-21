@@ -275,7 +275,7 @@ const newRPCRequest = (params, method) => {
     return payload;
 };
 
-const externalBalanceUpdate = async (address, fromAddress, balance, ethTransactionHash, blockId, timestamp, addresses = {}) => {
+const externalBalanceUpdate = async (address, balance, ethTransactionHash, blockId, timestamp, addresses = {}) => {
     address = normalizeAddress(address);
     const txHash = normalizeAddress(ethTransactionHash);
     const balanceUpdate = new balance_pb.BalanceUpdate();
@@ -465,24 +465,6 @@ const linkWallet = async (address, applicationId, userId, signature) => {
 // await pendingProps.settle(args.application, args.user, args.amount, args.toaddress, args.fromaddress, args.ethtransactionhash, args.blockid, args.timestamp);
 const settle = async (applicationId, userId, amount, toAddress, fromAddress, txHash, blockId, timestamp, addresses = {}) => {
 
-    /*
-
-    msg.setApplicationId(value);
-
-    msg.setUserId(value);
-
-    msg.setAmount(value);
-
-    msg.setToAddress(value);
-
-    msg.setFromAddress(value);
-
-    msg.setTxHash(value);
-
-    msg.setBlockId(value);
-
-    msg.setTimestamp(value);
-     */
     const settlementData = new payloads_pb.SettlementData();
     settlementData.setApplicationId(applicationId);
     settlementData.setUserId(userId);
@@ -520,6 +502,17 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
         .namespaces
         .settlementAddress(txHash);
 
+
+    const walletBalanceAddress = CONFIG
+        .earnings
+        .namespaces
+        .balanceAddress("",toAddress);
+
+    const walletLinkAddress = CONFIG
+        .earnings
+        .namespaces
+        .walletLinkAddress(toAddress);
+
     // check if user balance is linked to a wallet
     const balance = await getLinkedWalletFromBalanceAddress(balanceAddress);
     const linkedWalletAddress = (balance[0]===undefined || !('linkedWallet' in balance[0])) ? "" : balance[0].linkedWallet;
@@ -555,8 +548,10 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
     log("Settlement Address = "+settlementAddress)
     log("Transaction Address = "+stateAddress);
     log("Balance Address = "+balanceAddress);
-    const inputs = [stateAddress, balanceAddress, settlementAddress,  ...linkedApplicationUserAddresses];
-    const outputs = [stateAddress, balanceAddress, settlementAddress, ...linkedApplicationUserAddresses];
+    log("Wallet Balance Address = "+walletBalanceAddress);
+    log("Wallet Link Address = "+walletLinkAddress);
+    const inputs = [stateAddress, balanceAddress, settlementAddress, walletBalanceAddress, walletLinkAddress,  ...linkedApplicationUserAddresses];
+    const outputs = [stateAddress, balanceAddress, settlementAddress, walletBalanceAddress, walletLinkAddress, ...linkedApplicationUserAddresses];
     addresses['stateAddress'] = stateAddress;
     addresses['balanceAddress'] = balanceAddress;
     addresses['linkedApplicationUserAddresses'] = linkedApplicationUserAddresses;
@@ -878,6 +873,8 @@ const queryState = async (address, t) => {
             return deserializeActivity(data)
         } else if (t === "settlement") {
             return deserializeSettlement(data)
+        } else if (t === "transfer_tx") {
+            return deserializeTransferTx(data)
         }else {
             log(`unknown state type ${t} expected earning or settlements`);
         }
@@ -934,6 +931,19 @@ const deserializeWalletLink = (data) => {
     });
     return retData;
 };
+
+const deserializeTransferTx = (data) => {
+    const retData = []
+    data.forEach(entry => {
+        const bytes = new Uint8Array(Buffer.from(entry.data, 'base64'));
+        const transferTxData = new payloads_pb
+            .BalanceUpdate
+            .deserializeBinary(bytes);
+        retData.push(transferTxData.toObject());
+        log(prettyjson.render(transferTxData.toObject()));
+    });
+    return retData;
+}
 
 const deserializeSettlement = (data) => {
     const retData = []
@@ -1077,7 +1087,7 @@ const calcDay = function(secondsInDay) {
 
 module.exports = {
     transaction,
-    settle
+    settle,
     externalBalanceUpdate,
     queryState,
     updateLastBlockId,

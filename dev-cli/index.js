@@ -79,12 +79,12 @@ cli
     .command('settle', 'settle props to a recipient')
     .argument('<application>', 'UDID of an authorized application')
     .argument('<user>', 'UDID of an authorized application user')
-    .argument('<amount>', 'amount of props to issue in earning')
-    .argument('<toaddress>', 'amount of props to issue in earning')
-    .argument('<fromaddress>', 'amount of props to issue in earning')
-    .argument('<ethtransactionhash>', 'amount of props to issue in earning')
-    .argument('<blockid>', 'amount of props to issue in earning')
-    .argument('<timestamp>', 'amount of props to issue in earning')
+    .argument('<amount>', 'amount of props that was settled')
+    .argument('<toaddress>', 'users wallet who received settlement')
+    .argument('<fromaddress>', 'application rewards address')
+    .argument('<ethtransactionhash>', 'settlement transaction hash')
+    .argument('<blockid>', 'block id of the settlement transaction hash')
+    .argument('<timestamp>', 'timestamp of the settlement transaction hash')
     .action(async (args, options, logger) => {
         logger.info(`settling props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}, 
         with txHash ${args.ethtransactionhash} (blockId: ${args.blockid}, timestamp: ${args.timestamp}, to: ${args.toaddress}, from: ${args.fromaddress})`);
@@ -122,6 +122,17 @@ cli
     .action((args, options, logger) => {
         const application = args.application == 0 ? '': args.application;
         logger.info(pendingProps.CONFIG.earnings.namespaces.balanceAddress(application, args.user));
+    })
+    .command('walletlink-address', 'Get wallet link address')
+    .argument('<wallet>', 'wallet address')
+    .action((args, options, logger) => {
+        logger.info(pendingProps.CONFIG.earnings.namespaces.walletLinkAddress(args.wallet));
+    })
+    .command('balance-update-tx-address', 'Get balance update tx address')
+    .argument('<ethtransactionhash>', 'UDID of an authorized application')
+    .argument('<address>', 'ethereum address for which an update took place')
+    .action((args, options, logger) => {
+        logger.info(pendingProps.CONFIG.earnings.namespaces.balanceAddress(args.ethtransactionhash, args.address));
     });
 
 const banner = figlet.textSync('props-chain-cli', {

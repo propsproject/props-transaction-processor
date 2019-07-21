@@ -52,8 +52,8 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 				}
 				if settlementBlockId == uint64(settlementData.GetBlockId()) &&
 					_settlementDetails.Amount.String() == settlementData.GetAmount() &&
-					_settlementDetails.To.String() == settlementData.GetToAddress() &&
-					_settlementDetails.ApplicationId.String() == settlementData.GetApplicationId() &&
+					eth_utils.NormalizeAddress(_settlementDetails.To.String()) == settlementData.GetToAddress() &&
+					eth_utils.NormalizeAddress(_settlementDetails.ApplicationId.String()) == settlementData.GetApplicationId() &&
 					_settlementDetails.UserId == settlementData.GetUserId() {
 
 					transaction := pending_props_pb.Transaction{
@@ -105,7 +105,9 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 					logger.Infof("This settlement (%v, %v) could not be verified %v, %v, %v, %v, %v != %v, %v, %v, %v, %v",
 						settlementData.GetTxHash(), settlementAddress, settlementBlockId, _settlementDetails.Amount.String(), _settlementDetails.To.String(), _settlementDetails.ApplicationId.String(), _settlementDetails.UserId,
 						uint64(settlementData.GetBlockId()), settlementData.GetAmount(), settlementData.GetToAddress(), settlementData.GetApplicationId(), settlementData.GetUserId())
-					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("This settlement was already submitted %v, %v", settlementData.GetTxHash(), settlementAddress)}
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("This settlement (%v, %v) could not be verified %v, %v, %v, %v, %v != %v, %v, %v, %v, %v",
+						settlementData.GetTxHash(), settlementAddress, settlementBlockId, _settlementDetails.Amount.String(), _settlementDetails.To.String(), _settlementDetails.ApplicationId.String(), _settlementDetails.UserId,
+						uint64(settlementData.GetBlockId()), settlementData.GetAmount(), settlementData.GetToAddress(), settlementData.GetApplicationId(), settlementData.GetUserId())}
 				}
 			}
 		} else {
