@@ -5,12 +5,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/propsproject/pending-props/core/eth-utils"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/propsproject/goprops-toolkit/propstoken/bindings/token"
 	"github.com/hyperledger/sawtooth-sdk-go/logging"
+	"github.com/propsproject/goprops-toolkit/propstoken/bindings/token"
+	"math/big"
 )
 
 type TransferDetails struct {
@@ -50,8 +48,8 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 		topics := log.Topics
 		sig := topics[0].Hex()
 		if sig == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" { // only if matches Transfer signature keccak256(Transfer(address,address,uint256))
-			from := eth_utils.NormalizeAddress(fmt.Sprintf("0x%v", topics[1].Hex()[26:]))
-			to := eth_utils.NormalizeAddress(fmt.Sprintf("0x%v", topics[2].Hex()[26:]))
+			from := NormalizeAddress(fmt.Sprintf("0x%v", topics[1].Hex()[26:]))
+			to := NormalizeAddress(fmt.Sprintf("0x%v", topics[2].Hex()[26:]))
 			logging.Get().Infof("GetEthTransactionTransferDetails checking addresses from=0x%v, to=0x%v address=%v", from, to, address)
 			if address == from || address == to {
 
@@ -77,7 +75,7 @@ func GetEthTransactionTransferDetails(transactionHash string, address string, cl
 			}
 
 			transferDetails := TransferDetails{
-				Address:        common.HexToAddress(eth_utils.NormalizeAddress(address)),
+				Address:        common.HexToAddress(NormalizeAddress(address)),
 				Balance: balance,
 				Amount: new(big.Int).SetBytes(log.Data),
 				From: common.HexToAddress(from),
@@ -113,7 +111,7 @@ func GetEthTransactionSettlementDetails(transactionHash string, client *propstok
 			if err != nil {
 				return nil, 0, fmt.Errorf("unable to decode userId %v (%s)", topics[2].Hex(), err)
 			}
-			to := common.HexToAddress(eth_utils.NormalizeAddress(topics[3].Hex()))
+			to := common.HexToAddress(NormalizeAddress(topics[3].Hex()))
 			err1 := client.ABI.Unpack(&settlementEvent, "Settlement", log.Data)
 			if err1 != nil {
 				return nil, 0, fmt.Errorf("unable to unpack log.Data %v (%s)", log.Data, err1)
