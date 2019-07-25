@@ -27,6 +27,7 @@ type SettlementDetails struct {
 	To                common.Address			`json:"to"`
 	ApplicationId     common.Address			`json:"applicationId"`
 	UserId            string					`json:"userId"`
+	Balance           *big.Int					`json:"balance"`
 }
 
 type SettlementEvent struct {
@@ -117,12 +118,25 @@ func GetEthTransactionSettlementDetails(transactionHash string, client *propstok
 				return nil, 0, fmt.Errorf("unable to unpack log.Data %v (%s)", log.Data, err1)
 			}
 
+			callOptions := bind.CallOpts{
+				Pending:     false,
+				BlockNumber: new(big.Int).SetUint64(log.BlockNumber),
+			}
+			balance, err := client.Token.BalanceOf(&callOptions, to)
+			if err != nil {
+				logging.Get().Infof("GetEthTransactionSettlementDetails> unable to get balanceOf %v on block %v (%s)", to, log.BlockNumber, err)
+				return nil, 0, fmt.Errorf("GetEthTransactionSettlementDetails: unable to get balanceOf %v on block %v (%s)", to, log.BlockNumber, err)
+			} else {
+				logging.Get().Infof("GetEthTransactionSettlementDetails: balance %v blockNumber %v (log.BlockNumber %v)", balance.String(), callOptions.BlockNumber.String(), log.BlockNumber)
+			}
+
 			settlementDetails := SettlementDetails{
 				Amount:			settlementEvent.Amount,
 				From:			settlementEvent.RewardsAddress,
 				To:				to,
 				ApplicationId: 	applicationId,
 				UserId:			string(userId),
+				Balance:		balance,
 
 			}
 

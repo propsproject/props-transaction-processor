@@ -59,7 +59,7 @@ func (s *State) SaveTransactions(transactions ...pending_props_pb.Transaction) e
 			// this is either revoke or settle which means balance should decrease
 			amount = amount.Neg(amount)
 		}
-		err1 := s.UpdateBalanceFromTransaction(transaction.GetUserId(), transaction.GetApplicationId(), *amount, transaction.GetTimestamp(), stateUpdate)
+		err1 := s.UpdateBalanceFromTransaction(transaction.GetUserId(), transaction.GetApplicationId(), *amount, transaction.GetTimestamp(), stateUpdate, nil)
 		if err1 != nil {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not prepare balance data %v", err1)}
 		}

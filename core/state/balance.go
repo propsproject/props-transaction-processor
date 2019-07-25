@@ -176,20 +176,35 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	return nil
 }
 
-func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amount big.Int, timestamp int64, updates map[string][]byte) error {
+func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amount big.Int, timestamp int64, updates map[string][]byte, newBalanceAmount *big.Int) error {
 	//1. get current balance
 	//2. update current balance
 
-	newBalanceDetails := pending_props_pb.BalanceDetails{
-		Pending: amount.String(),
-		TotalPending: amount.String(),
-		Transferable: big.NewInt(0).String(),
-		Bonded: big.NewInt(0).String(),
-		Delegated: big.NewInt(0).String(),
-		DelegatedTo: "",
-		Timestamp: timestamp,
-		LastUpdateType: pending_props_pb.UpdateType_PENDING_PROPS_BALANCE,
+	var newBalanceDetails pending_props_pb.BalanceDetails;
+	if newBalanceAmount != nil {
+		newBalanceDetails = pending_props_pb.BalanceDetails{
+			Pending: amount.String(),
+			TotalPending: amount.String(),
+			Transferable: newBalanceAmount.String(),
+			Bonded: big.NewInt(0).String(),
+			Delegated: big.NewInt(0).String(),
+			DelegatedTo: "",
+			Timestamp: timestamp,
+			LastUpdateType: pending_props_pb.UpdateType_PENDING_PROPS_BALANCE,
+		}
+	} else {
+		newBalanceDetails = pending_props_pb.BalanceDetails{
+			Pending: amount.String(),
+			TotalPending: amount.String(),
+			Transferable: big.NewInt(0).String(),
+			Bonded: big.NewInt(0).String(),
+			Delegated: big.NewInt(0).String(),
+			DelegatedTo: "",
+			Timestamp: timestamp,
+			LastUpdateType: pending_props_pb.UpdateType_PENDING_PROPS_BALANCE,
+		}
 	}
+
 
 	newBalanceUser := pending_props_pb.Balance{
 		UserId: userId,
@@ -261,6 +276,9 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 		balanceUser.BalanceDetails.Pending = pending.Add(pending, newPending).String()
 		balanceUser.BalanceDetails.TotalPending = totalPending.Add(totalPending, newTotalPending).String()
 		balanceUser.BalanceDetails.Timestamp = newBalanceDetails.GetTimestamp()
+		if newBalanceAmount != nil {
+			balanceUser.BalanceDetails.Transferable = newBalanceAmount.String()
+		}
 	}
 
 	// check if it's linked to a wallet with more users
@@ -312,6 +330,10 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 			walletBalance.BalanceDetails.TotalPending = balanceUser.GetBalanceDetails().GetTotalPending()
 			walletBalance.BalanceDetails.LastUpdateType = balanceUser.GetBalanceDetails().GetLastUpdateType()
 			walletBalance.BalanceDetails.Timestamp = balanceUser.GetBalanceDetails().GetTimestamp()
+			if newBalanceAmount != nil {
+				walletBalance.BalanceDetails.Transferable = newBalanceAmount.String()
+			}
+
 			s.UpdateBalance(*walletBalance, updates, true)
 		}
 	} else {

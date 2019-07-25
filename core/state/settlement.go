@@ -97,7 +97,7 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 						processor.Attribute{"description", transaction.GetDescription()},
 					}
 					s.AddEvent(e, "pending-props:transaction", attr...)
-					err1 := s.UpdateBalanceFromTransaction(transaction.GetUserId(), transaction.GetApplicationId(), *_settlementDetails.Amount.Neg(_settlementDetails.Amount), transaction.GetTimestamp(), stateUpdate)
+					err1 := s.UpdateBalanceFromTransaction(transaction.GetUserId(), transaction.GetApplicationId(), *_settlementDetails.Amount.Neg(_settlementDetails.Amount), transaction.GetTimestamp(), stateUpdate, _settlementDetails.Balance)
 					if err1 != nil {
 						return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not prepare balance data %v", err1)}
 					}
