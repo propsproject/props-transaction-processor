@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	"github.com/hyperledger/sawtooth-sdk-go/logging"
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 )
@@ -24,12 +23,12 @@ func (s *State) SaveRewardEntity(rewardEntityUpdates ...pending_props_pb.RewardE
 		stateUpdate[rewardEntityAddressByRewardsAddress] = rewardEntityBytes
 		receiptBytes, err := json.Marshal(GetRewardEntityUpdateReceipt(rewardEntityUpdate.GetName(), rewardEntityUpdate.GetAddress(), rewardEntityUpdate.GetRewardsAddress(), rewardEntityUpdate.GetSidechainAddress() ))
 		if err != nil {
-			logging.Get().Infof("unable to create new reward entity update receipt (%s)", err)
+			logger.Infof("unable to create new reward entity update receipt (%s)", err)
 		}
 
 		err = s.context.AddReceiptData(receiptBytes)
 		if err != nil {
-			logging.Get().Infof("unable to add new reward entity update receipt (%s)", err)
+			logger.Infof("unable to add new reward entity update receipt (%s)", err)
 		}
 
 		rewardEntityUpdateEvent := pending_props_pb.RewardEntityUpdateEvent{

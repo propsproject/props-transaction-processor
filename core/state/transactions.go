@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
-	"github.com/hyperledger/sawtooth-sdk-go/logging"
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"math/big"
 )
 
@@ -31,12 +30,12 @@ func (s *State) SaveTransactions(transactions ...pending_props_pb.Transaction) e
 
 		receiptBytes, err := json.Marshal(GetTransactionReceipt(transaction.GetType().String(), transactionAddress, transaction.GetUserId(), transaction.GetApplicationId(), *amount))
 		if err != nil {
-			logging.Get().Infof("unable to create new transaction receipt (%s)", err)
+			logger.Infof("unable to create new transaction receipt (%s)", err)
 		}
 
 		err = s.context.AddReceiptData(receiptBytes)
 		if err != nil {
-			logging.Get().Infof("unable to create new transaction receipt (%s)", err)
+			logger.Infof("unable to create new transaction receipt (%s)", err)
 		}
 
 		e := pending_props_pb.TransactionEvent{

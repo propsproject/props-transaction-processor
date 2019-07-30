@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
-	"github.com/hyperledger/sawtooth-sdk-go/logging"
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
+	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"strconv"
 )
 
@@ -88,12 +87,12 @@ func (s *State) SaveLastEthBlockUpdate(blockUpdates ...pending_props_pb.LastEthB
 		stateUpdate[blockUpdateAddress] = blockUpdateBytes
 		receiptBytes, err := json.Marshal(GetLastEthBlockUpdateReceipt(blockUpdateAddress, blockUpdateData.GetId()))
 		if err != nil {
-			logging.Get().Infof("unable to create new block update receipt (%s)", err)
+			logger.Infof("unable to create new block update receipt (%s)", err)
 		}
 
 		err = s.context.AddReceiptData(receiptBytes)
 		if err != nil {
-			logging.Get().Infof("unable to add new block update receipt (%s)", err)
+			logger.Infof("unable to add new block update receipt (%s)", err)
 		}
 
 		lastBlockUpdateEvent := pending_props_pb.LastEthBlockEvent{
