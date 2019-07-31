@@ -129,10 +129,15 @@ cli
         logger.info(pendingProps.CONFIG.earnings.namespaces.walletLinkAddress(args.wallet));
     })
     .command('balance-update-tx-address', 'Get balance update tx address')
-    .argument('<ethtransactionhash>', 'UDID of an authorized application')
+    .argument('<ethtransactionhash>', 'transaction hash')
     .argument('<address>', 'ethereum address for which an update took place')
     .action((args, options, logger) => {
         logger.info(pendingProps.CONFIG.earnings.namespaces.balanceAddress(args.ethtransactionhash, args.address));
+    })
+    .command('settlement-address', 'Get balance update tx address')
+    .argument('<ethtransactionhash>', 'transaction hash')
+    .action((args, options, logger) => {
+        logger.info(pendingProps.CONFIG.earnings.namespaces.settlementAddress(args.ethtransactionhash));
     });
 
 const banner = figlet.textSync('props-chain-cli', {
