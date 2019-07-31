@@ -29,16 +29,19 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 			token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"))
 			if err != nil {
 				logger.Infof("Could not connect to main-chain to verify settlement %v",err)
+				token.RPC.Close()
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify settlement (%s)", err)}
 			}
 			latestHeader, err := token.RPC.HeaderByNumber(context.Background(), nil)
 			if err != nil {
 				logger.Infof("Could not get current blockId on main-chain to verify settlement %v",err)
+				token.RPC.Close()
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify settlement (%s)", err)}
 			}
 			latestBlockId := latestHeader.Number
 			if latestBlockId.Cmp(big.NewInt(0)) <= 0 {
 				logger.Infof("Could not get current blockId on main-chain to verify settlement %v",err)
+				token.RPC.Close()
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify settlement (%s)", err)}
 			}
 			logger.Infof("Latest Block on main-chain is %v", latestBlockId.String())
@@ -46,6 +49,7 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 			if latestBlockId.Cmp(big.NewInt(0).Add(confirmationBlocks, big.NewInt(settlementData.GetBlockId()))) >= 0 {
 				// check details are correct looking up the transaction transfer details
 				_settlementDetails, settlementBlockId, err := eth_utils.GetEthTransactionSettlementDetails(eth_utils.NormalizeAddress(settlementData.GetTxHash()), token)
+				token.RPC.Close()
 				if err != nil {
 					logger.Infof("Could verify settlement on main-chain %v",err)
 					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could verify settlement on main-chain %v",err)}
@@ -109,6 +113,9 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 						settlementData.GetTxHash(), settlementAddress, settlementBlockId, _settlementDetails.Amount.String(), _settlementDetails.To.String(), _settlementDetails.ApplicationId.String(), _settlementDetails.UserId,
 						uint64(settlementData.GetBlockId()), settlementData.GetAmount(), settlementData.GetToAddress(), settlementData.GetApplicationId(), settlementData.GetUserId())}
 				}
+			} else {
+				token.RPC.Close()
+				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Not enough confirmation blocks latestBlockId=%v submittedBlockId=%v", latestBlockId.String(), settlementData.GetBlockId())}
 			}
 		} else {
 			logger.Infof("This settlement was already submitted %v, %v", settlementData.GetTxHash(), settlementAddress)
