@@ -29,16 +29,19 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"))
 		if err != nil {
 			logger.Infof("Could not connect to main-chain to verify balance update %v",err)
+			token.RPC.Close()
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify balance update (%s) (balanceUpdate for %v)", err,  balanceUpdate.GetPublicAddress())}
 		}
 		latestHeader, err := token.RPC.HeaderByNumber(context.Background(), nil)
 		if err != nil {
 			logger.Infof("Could not get current blockId on main-chain to verify balance update %v (balanceUpdate for %v)",err, balanceUpdate.GetPublicAddress())
+			token.RPC.Close()
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
 		latestBlockId := latestHeader.Number
 		if latestBlockId.Cmp(big.NewInt(0)) <= 0 {
 			logger.Infof("Could not get current blockId on main-chain to verify balance update %v (balanceUpdate for %v)",err,balanceUpdate.GetPublicAddress())
+			token.RPC.Close()
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
 		}
 		logger.Infof("Latest Block on main-chain is %v (balanceUpdate for %v)", latestBlockId.String(), balanceUpdate.GetPublicAddress())
@@ -46,6 +49,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 		if latestBlockId.Cmp(big.NewInt(0).Add(confirmationBlocks, big.NewInt(balanceUpdate.GetBlockId()))) >= 0 {
 			// check details are correct looking up the transaction transfer details
 			_transferDetails, transferBlockId, err := eth_utils.GetEthTransactionTransferDetails(eth_utils.NormalizeAddress(balanceUpdate.GetTxHash()), eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()), token)
+			token.RPC.Close()
 			if err == nil && transferBlockId > 0 {
 				tdAddress := eth_utils.NormalizeAddress(_transferDetails.Address.String())
 				tdBalance := _transferDetails.Balance
@@ -72,6 +76,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 			}
 
 		} else {
+			token.RPC.Close()
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Not enough confirmation blocks latestBlockId=%v submittedBlockId=%v", latestBlockId.String(), balanceUpdate.GetBlockId())}
 		}
 	} else {
