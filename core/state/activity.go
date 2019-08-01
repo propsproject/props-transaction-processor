@@ -61,11 +61,14 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 				return &processor.InvalidTransactionError{Msg: "could not marshal activity proto"}
 			}
 
-			if blockDate == activity.Date || blockDateBuffer == activity.Date || lastEthBlockData.GetTimestamp() == 0 {
+			stateUpdate[activityAddress] = b
+
+			// Remove these checks for now, the ms-activity is using rewards days instead of days
+			/*if blockDate == activity.Date || blockDateBuffer == activity.Date || lastEthBlockData.GetTimestamp() == 0 {
 				stateUpdate[activityAddress] = b
 			} else {
 				logger.Infof("Can't log activityDate=%v while current date is ", activity.Date, blockDate)
-			}
+			}*/
 		} else {
 			logger.Infof(fmt.Sprintf("Activity log already exists for applicationId=%v, userId=%v, date=%v, skipping...", activity.ApplicationId, activity.UserId, activity.Date))
 		}
