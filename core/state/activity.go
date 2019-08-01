@@ -5,8 +5,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
-	"strconv"
-	"time"
 )
 
 // logDate is in format YYYYMMDD
@@ -19,7 +17,7 @@ func ValidateActivityTimestamp(logDate int, blockDate int64) error {
 func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) error {
 	stateUpdate := make(map[string][]byte)
 
-	lastEthBlockData, err := s.GetLastEthBlockData()
+	/*lastEthBlockData, err := s.GetLastEthBlockData()
 
 	if err != nil {
 		logger.Infof("Unable to get the last eth block data will use 0...")
@@ -27,23 +25,23 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 			Id: 0,
 			Timestamp:0,
 		}
-	}
+	}*/
 
-	var bufferTimeSec int64 = 180
+	//var bufferTimeSec int64 = 180
 
 	// Build the current date
-	blockDateStr := time.Unix(lastEthBlockData.Timestamp, 0).Format("20060102")
-	blockDate64, _ := strconv.ParseInt(blockDateStr, 10, 32)
-	blockDate := int32(blockDate64)
+	//blockDateStr := time.Unix(lastEthBlockData.Timestamp, 0).Format("20060102")
+	//blockDate64, _ := strconv.ParseInt(blockDateStr, 10, 32)
+	//blockDate := int32(blockDate64)
 
 	// Build the current date + bufferTimeSec, this might be the next day, allow it, since the lastEthBlockDate is behind with more or less 2 minutes or so
 	// Some apps might already be logging users for the new day
-	blockDateBufferStr := time.Unix(lastEthBlockData.Timestamp + bufferTimeSec, 0).Format("20060102")
-	blockDateBuffer64, _ := strconv.ParseInt(blockDateBufferStr, 10, 32)
-	blockDateBuffer := int32(blockDateBuffer64)
+	//blockDateBufferStr := time.Unix(lastEthBlockData.Timestamp + bufferTimeSec, 0).Format("20060102")
+	//blockDateBuffer64, _ := strconv.ParseInt(blockDateBufferStr, 10, 32)
+	//blockDateBuffer := int32(blockDateBuffer64)
 
 
-	logger.Info("Block date ", blockDate)
+	//logger.Info("Block date ", blockDate)
 
 	// Fetch the timestamp of the last eth block address
 	for _, activity := range activities {
@@ -69,6 +67,7 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 			} else {
 				logger.Infof("Can't log activityDate=%v while current date is ", activity.Date, blockDate)
 			}*/
+			logger.Infof(fmt.Sprintf("Going to log applicationId=%v, userId=%v, date=%v, skipping...", activity.ApplicationId, activity.UserId, activity.Date))
 		} else {
 			logger.Infof(fmt.Sprintf("Activity log already exists for applicationId=%v, userId=%v, date=%v, skipping...", activity.ApplicationId, activity.UserId, activity.Date))
 		}
