@@ -67,7 +67,7 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 			} else {
 				logger.Infof("Can't log activityDate=%v while current date is ", activity.Date, blockDate)
 			}*/
-			logger.Infof(fmt.Sprintf("Going to log applicationId=%v, userId=%v, date=%v, skipping...", activity.ApplicationId, activity.UserId, activity.Date))
+			logger.Infof(fmt.Sprintf("Going to log applicationId=%v, userId=%v, date=%v", activity.ApplicationId, activity.UserId, activity.Date))
 		} else {
 			logger.Infof(fmt.Sprintf("Activity log already exists for applicationId=%v, userId=%v, date=%v, skipping...", activity.ApplicationId, activity.UserId, activity.Date))
 		}
