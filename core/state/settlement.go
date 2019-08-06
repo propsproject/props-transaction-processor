@@ -26,7 +26,7 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 		if len(string(existingSettlementStateData[settlementAddress])) == 0 {
 			// check settlement data on ethereum
 			logger.Infof(fmt.Sprintf("New settlement for application %v, user %v, wallet %v, amount %v", settlementData.GetApplicationId(), settlementData.GetUserId(), settlementData.GetToAddress(), settlementData.GetAmount()))
-			token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"))
+			token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url_tp"))
 			if err != nil {
 				logger.Infof("Could not connect to main-chain to verify settlement %v",err)
 				token.RPC.Close()
