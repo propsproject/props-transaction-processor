@@ -711,7 +711,8 @@ proto.pending_props_pb.BalanceType = {
  */
 proto.pending_props_pb.UpdateType = {
   PENDING_PROPS_BALANCE: 0,
-  PROPS_BALANCE: 1
+  PROPS_BALANCE: 1,
+  WALLET_LINK_BALANCE: 2
 };
 
 goog.object.extend(exports, proto.pending_props_pb);
