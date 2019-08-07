@@ -39,10 +39,11 @@ cli
     })
     .command('updateLastEthBlockId', 'Update last eth block id for which events were added')
     .argument('<blockid>', 'last block id')
+    .argument('<timestamp>', 'last block timestamp')
     .action(async (args, options, logger) => {
-        logger.info(`updating last eth block id with: ${args.blockid}`);
+        logger.info(`updating last eth block id with: ${args.blockid}, ${args.timestamp}`);
         try {
-            await pendingProps.updateLastBlockId(args.blockid);
+            await pendingProps.updateLastBlockId(args.blockid, args.timestamp);
         } catch (e) {
             logger.error(`error updating last block id: ${e}`)
         }

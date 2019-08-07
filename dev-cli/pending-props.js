@@ -241,7 +241,6 @@ const CONFIG = {
             },
             activityLogAddress(date, appId, userId) {
                 const prefix = this.prefixes.activityLog;
-                console.log(prefix);
                 const part1 = createHash('sha512')
                     .update(date)
                     .digest('hex')
@@ -263,7 +262,6 @@ const CONFIG = {
     }
 };
 
-console.log(JSON.stringify(CONFIG.earnings.namespaces));
 
 const newRPCRequest = (params, method) => {
     const reqParams = new payloads_pb.Params();
@@ -693,9 +691,10 @@ const transaction = async (transactionType, applicationId, userId, amount, descr
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 
-const updateLastBlockId = async (blockId) => {
+const updateLastBlockId = async (blockId, timestamp) => {
     const blockUpdate = new payloads_pb.LastEthBlock();
     blockUpdate.setId(blockId);
+    blockUpdate.setTimestamp(timestamp);
     //setup RPC request
     const params = new any.Any();
     params.setValue(blockUpdate.serializeBinary());
