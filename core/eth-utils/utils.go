@@ -5,6 +5,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"strings"
 )
 
@@ -63,4 +65,24 @@ func VerifySig(from, sigHex string, msg []byte) bool {
 func SignHash(data []byte) []byte {
 	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(data), data)
 	return crypto.Keccak256([]byte(msg))
+}
+
+func CalculateRewardsDay(timestamp int64, logger *zap.SugaredLogger) int64 {
+	secondsFromRewardsStartTimestamp:= timestamp - viper.GetInt64("rewards_start_timestamp")
+	secondsInDay := viper.GetInt64("seconds_in_day")
+	ret := (secondsFromRewardsStartTimestamp / secondsInDay) + 1
+	if ret < 0 && (secondsFromRewardsStartTimestamp % secondsInDay) != 0 {
+		ret = ret - 1
+	}
+	logger.Infof("*********** secondsFromStart/secondInDay = %v, timestamp = %v, start_timestamp = %v, secondsInDay = %v, ret = %v",
+		secondsFromRewardsStartTimestamp / secondsInDay, timestamp, viper.GetInt64("rewards_start_timestamp"), secondsInDay, ret)
+	return ret
+}
+
+// Abs returns the absolute value of x.
+func Abs(x int64) int64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

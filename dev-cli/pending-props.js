@@ -34,6 +34,7 @@ const moment = require('moment');
 const BigNumber = require('bignumber.js');
 BigNumber.config({ EXPONENTIAL_AT: 1e+9 })
 const restAPIHost = process.env.REST_API_URL != undefined ? process.env.REST_API_URL : 'http://127.0.0.1:8008';
+var tp_config = require('../configs/development.json');
 
 const transactionTypes = {
     ISSUE: payloads_pb.Method.ISSUE,
@@ -306,6 +307,8 @@ const externalBalanceUpdate = async (address, balance, ethTransactionHash, block
         .namespaces
         .walletLinkAddress(address);
 
+    const activityAddresses = [];
+
     const linkedApplicationUsers = await getLinkedUsersFromWalletLinkAddress(walletLinkAddress);
     const linkedApplicationUserAddresses = [];
     log(`linkedApplicationUsers ${JSON.stringify(linkedApplicationUsers)}`);
@@ -318,6 +321,12 @@ const externalBalanceUpdate = async (address, balance, ethTransactionHash, block
             if (linkedBalanceAddress != balanceAddress) {
                 linkedApplicationUserAddresses.push(linkedBalanceAddress);
             }
+            const activityAddress = CONFIG
+                .earnings
+                .namespaces
+                .activityLogAddress(calcRewardsDay(timestamp).toString(), linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
+            // console.log(`******* rewardsDay = ${calcRewardsDay(timestamp).toString()}, timestamp=${timestamp}, activityAddress=${activityAddress}`);
+            activityAddresses.push(activityAddress);
             // include the settle transaction address in case this transfer it a settlement
             const transactionAddress = CONFIG
                 .earnings
@@ -332,8 +341,9 @@ const externalBalanceUpdate = async (address, balance, ethTransactionHash, block
     log("Balance Address = "+balanceAddress);
     log("BalanceUpdate Address = "+balanceUpdateAddress);
     log("WalletLink Address = "+walletLinkAddress);
-    const inputs = [balanceAddress, balanceUpdateAddress, walletLinkAddress, ...linkedApplicationUserAddresses];
-    const outputs = [balanceAddress, balanceUpdateAddress, walletLinkAddress, ...linkedApplicationUserAddresses];
+    log("Activity Addresses = "+JSON.stringify(activityAddresses));
+    const inputs = [balanceAddress, balanceUpdateAddress, walletLinkAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
+    const outputs = [balanceAddress, balanceUpdateAddress, walletLinkAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
 
     // do the sawtooth thang ;)
     const transactionHeaderBytes = protobuf
@@ -368,15 +378,16 @@ const externalBalanceUpdate = async (address, balance, ethTransactionHash, block
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 
-const linkWallet = async (address, applicationId, userId, signature) => {
+const linkWallet = async (address, applicationId, userId, signature, _timestamp = 0) => {
     address = normalizeAddress(address);
     const walletToUser = new users_pb.WalletToUser();
     walletToUser.setAddress(address);
     const applicationUser = new users_pb.ApplicationUser();
+    const timestamp = _timestamp > 0 ? _timestamp : moment().unix();
     applicationUser.setUserId(userId);
     applicationUser.setApplicationId(applicationId);
     applicationUser.setSignature(signature);
-    applicationUser.setTimestamp(moment().unix());
+    applicationUser.setTimestamp(timestamp);
     walletToUser.addUsers(applicationUser);
 
     //setup RPC request
@@ -405,6 +416,12 @@ const linkWallet = async (address, applicationId, userId, signature) => {
         .namespaces
         .balanceAddress("", address);
 
+    const activityAddress = CONFIG
+        .earnings
+        .namespaces
+        .activityLogAddress(calcRewardsDay(timestamp).toString(), applicationId, userId);
+    const activityAddresses = [activityAddress];
+
     // read walletLinkAddress existing data and add to inputs/outputs so it can read/write from/to it
     const linkedApplicationUsers = await getLinkedUsersFromWalletLinkAddress(walletLinkAddress);
     const linkedApplicationUserAddresses = [];
@@ -417,6 +434,11 @@ const linkWallet = async (address, applicationId, userId, signature) => {
                     .namespaces
                     .balanceAddress(linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId)
             )
+            const activityAddress = CONFIG
+                .earnings
+                .namespaces
+                .activityLogAddress(calcRewardsDay(timestamp).toString(), linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
+            activityAddresses.push(activityAddress);
         }
         log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
     }
@@ -425,8 +447,9 @@ const linkWallet = async (address, applicationId, userId, signature) => {
     log("balanceAddress = "+balanceAddress);
     log("walletBalanceAddress = "+walletBalanceAddress);
     log("linkedApplicationUserAddresses = "+linkedApplicationUserAddresses.join(","));
-    const inputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses];
-    const outputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses];
+    log("activityAddresses = "+activityAddresses.join(","));
+    const inputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
+    const outputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
 
     // do the sawtooth thang ;)
     const transactionHeaderBytes = protobuf
@@ -511,6 +534,11 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
         .namespaces
         .walletLinkAddress(toAddress);
 
+    const activityAddress = CONFIG
+        .earnings
+        .namespaces
+        .activityLogAddress(calcRewardsDay(timestamp).toString(), applicationId, userId);
+    const activityAddresses = [activityAddress];
     // check if user balance is linked to a wallet
     const balance = await getLinkedWalletFromBalanceAddress(balanceAddress);
     const linkedWalletAddress = (balance[0]===undefined || !('linkedWallet' in balance[0])) ? "" : balance[0].linkedWallet;
@@ -538,6 +566,11 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
                 if (linkedBalanceAddress != balanceAddress) {
                     linkedApplicationUserAddresses.push(linkedBalanceAddress);
                 }
+                const activityAddress = CONFIG
+                    .earnings
+                    .namespaces
+                    .activityLogAddress(calcRewardsDay(timestamp).toString(), linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
+                activityAddresses.push(activityAddress);
             }
             log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
         }
@@ -548,8 +581,9 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
     log("Balance Address = "+balanceAddress);
     log("Wallet Balance Address = "+walletBalanceAddress);
     log("Wallet Link Address = "+walletLinkAddress);
-    const inputs = [stateAddress, balanceAddress, settlementAddress, walletBalanceAddress, walletLinkAddress,  ...linkedApplicationUserAddresses];
-    const outputs = [stateAddress, balanceAddress, settlementAddress, walletBalanceAddress, walletLinkAddress, ...linkedApplicationUserAddresses];
+    log("Activity Log Addresses = "+JSON.stringify(activityAddresses));
+    const inputs = [stateAddress, balanceAddress, settlementAddress, walletBalanceAddress, walletLinkAddress,  ...linkedApplicationUserAddresses, ...activityAddresses];
+    const outputs = [stateAddress, balanceAddress, settlementAddress, walletBalanceAddress, walletLinkAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
     addresses['stateAddress'] = stateAddress;
     addresses['balanceAddress'] = balanceAddress;
     addresses['linkedApplicationUserAddresses'] = linkedApplicationUserAddresses;
@@ -585,11 +619,11 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 
-const transaction = async (transactionType, applicationId, userId, amount, description = '', addresses = {}) => {
+const transaction = async (transactionType, applicationId, userId, amount, description = '', addresses = {}, _timestamp = 0) => {
 
 
     const transactionData = new transaction_pb.Transaction();
-    const timestamp = moment().unix();
+    const timestamp = _timestamp > 0 ? _timestamp : moment().unix();
     transactionData.setType(transactionType);
     transactionData.setTimestamp(timestamp);
     transactionData.setApplicationId(applicationId);
@@ -620,6 +654,12 @@ const transaction = async (transactionType, applicationId, userId, amount, descr
         .namespaces
         .balanceAddress(applicationId, userId);
 
+    const activityAddress = CONFIG
+        .earnings
+        .namespaces
+        .activityLogAddress(calcRewardsDay(timestamp).toString(), applicationId, userId);
+
+    const activityAddresses = [activityAddress]
     // check if user balance is linked to a wallet
     const balance = await getLinkedWalletFromBalanceAddress(balanceAddress);
     const linkedWalletAddress = (balance[0]===undefined || !('linkedWallet' in balance[0])) ? "" : balance[0].linkedWallet;
@@ -647,6 +687,12 @@ const transaction = async (transactionType, applicationId, userId, amount, descr
                 if (linkedBalanceAddress != balanceAddress) {
                     linkedApplicationUserAddresses.push(linkedBalanceAddress);
                 }
+                activityAddresses.push(
+                    CONFIG
+                        .earnings
+                        .namespaces
+                        .activityLogAddress(calcRewardsDay(timestamp).toString(), linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId)
+                );
             }
             log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
         }
@@ -654,8 +700,9 @@ const transaction = async (transactionType, applicationId, userId, amount, descr
     log(JSON.stringify(linkedApplicationUserAddresses));
     log("Transaction Address = "+stateAddress);
     log("Balance Address = "+balanceAddress);
-    const inputs = [stateAddress, balanceAddress, ...linkedApplicationUserAddresses];
-    const outputs = [stateAddress, balanceAddress, ...linkedApplicationUserAddresses];
+    log("Activity Addresses = "+JSON.stringify(activityAddresses));
+    const inputs = [stateAddress, balanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
+    const outputs = [stateAddress, balanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
     addresses['stateAddress'] = stateAddress;
     addresses['balanceAddress'] = balanceAddress;
     addresses['linkedApplicationUserAddresses'] = linkedApplicationUserAddresses;
@@ -859,7 +906,7 @@ const queryState = async (address, t) => {
 
         const response = await axios(reqConfig);
         const data = response.data.data;
-
+        // console.log(reqConfig.url);
         if (t === "transaction") {
             return deserializeTransactions(data);
         } else if (t === "balance") {
@@ -906,7 +953,8 @@ const deserializeTransactions = (data) => {
 };
 
 const deserializeBalance = (data) => {
-    const retData = []
+    // console.log('data'+JSON.stringify(data));
+    const retData = [];
     data.forEach(entry => {
         const bytes = new Uint8Array(Buffer.from(entry.data, 'base64'));
         const balance = new balance_pb
@@ -983,16 +1031,18 @@ const deserializeActivity = (data) => {
     return retData;
 };
 
-const logActivity = async(userId, appId, timestamp, date) => {
+const logActivity = async(userId, appId, _timestamp = 0, _date = 0, addresses = {},) => {
 
-    //setup RPC request
-    const paramData = JSON.stringify({
-        userId,
-        appId,
-        timestamp,
-        date,
-    });
+    // //setup RPC request
+    // const paramData = JSON.stringify({
+    //     userId,
+    //     appId,
+    //     timestamp,
+    //     date,
+    // });
 
+    const timestamp = _timestamp > 0 ? _timestamp : moment().unix();
+    const date = _date > 0 ? _date : calcRewardsDay(timestamp);
     activityLog = new activity_pb.ActivityLog();
     activityLog.setUserId(userId);
     activityLog.setApplicationId(appId);
@@ -1008,11 +1058,51 @@ const logActivity = async(userId, appId, timestamp, date) => {
     const activityAddress = CONFIG
         .earnings
         .namespaces
-        .activityLogAddress(date, appId, userId);
+        .activityLogAddress(calcRewardsDay(timestamp).toString(), appId, userId);
 
     log(activityAddress);
+    addresses['stateAddress'] = activityAddress;
 
-    const inputs = [activityAddress];
+    // compute balance and balaneTimestamp addresses for outputs
+    const balanceAddress = CONFIG
+        .earnings
+        .namespaces
+        .balanceAddress(appId, userId);
+
+    const balance = await getLinkedWalletFromBalanceAddress(balanceAddress);
+    const linkedWalletAddress = (balance[0]===undefined || !('linkedWallet' in balance[0])) ? "" : balance[0].linkedWallet;
+    const linkedApplicationUserAddresses = [];
+    let walletLinkAddress = '';
+    if (linkedWalletAddress.length > 0) {
+        walletLinkAddress = CONFIG
+            .earnings
+            .namespaces
+            .walletLinkAddress(linkedWalletAddress);
+
+        const walletBalanceAddress = CONFIG
+            .earnings
+            .namespaces
+            .balanceAddress("", linkedWalletAddress);
+        const linkedApplicationUsers = await getLinkedUsersFromWalletLinkAddress(walletLinkAddress);
+        linkedApplicationUserAddresses.push(walletLinkAddress);
+        linkedApplicationUserAddresses.push(walletBalanceAddress);
+        log(`linkedApplicationUsers ${JSON.stringify(linkedApplicationUsers)}`);
+        if (linkedApplicationUsers.length > 0) {
+            for (let i = 0; i < linkedApplicationUsers[0].usersList.length; ++i) {
+                const linkedBalanceAddress = CONFIG
+                    .earnings
+                    .namespaces
+                    .balanceAddress(linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
+                if (linkedBalanceAddress != balanceAddress) {
+                    linkedApplicationUserAddresses.push(linkedBalanceAddress);
+                }
+            }
+            log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
+        }
+    }
+
+
+    const inputs = [activityAddress, balanceAddress, walletLinkAddress, ...linkedApplicationUserAddresses];
     const outputs = [activityAddress];
 
     // do the sawtooth thang ;)
@@ -1073,7 +1163,8 @@ const padWithZeros = (address) => {
     return address;
 };
 
-const calcDay = function(secondsInDay) {
+const calcDay = function() {
+    const secondsInDay = tp_config.seconds_in_day;
     const currentTimestamp = Math.floor(Date.now()/1000);
     const secondsLeft = secondsInDay - (currentTimestamp % secondsInDay);
     const ret =  {
@@ -1081,6 +1172,12 @@ const calcDay = function(secondsInDay) {
         secondsLeft
     }
     return ret;
+}
+
+const calcRewardsDay = function(timestamp) {
+    const secondsInDay = tp_config.seconds_in_day;
+    const secondsSinceRewardsStartTimestamp = timestamp - tp_config.rewards_start_timestamp;
+    return Math.floor(secondsSinceRewardsStartTimestamp / secondsInDay) + 1;
 }
 
 
@@ -1099,6 +1196,7 @@ module.exports = {
     transactionTypes,
     newSigner,
     calcDay,
+    calcRewardsDay,
 };
 
 // const secp256k1 = require('secp256k1');

@@ -16,10 +16,11 @@ cli
     .argument('<user>', 'UDID of an authorized application user')
     .argument('<amount>', 'amount of props to issue in earning')
     .argument('[description]', 'reason for this earning (optional)')
+    .argument('[timestamp]', 'timestamp of the transaction (will default to now if not passed')
     .action(async (args, options, logger) => {
-        logger.info(`issuing props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}`);
+        logger.info(`issuing props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description} (${args.timestamp})`);
         try {
-            await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, args.application, args.user, args.amount, args.description ? args.description : '');
+            await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, args.application, args.user, args.amount, args.description ? args.description : '', {}, args.timestamp ? args.timestamp : 0);
         } catch (e) {
             logger.error(`error issuing earning: ${e}`)
         }
@@ -29,10 +30,11 @@ cli
     .argument('<user>', 'UDID of an authorized application user')
     .argument('<amount>', 'amount of props to issue in earning')
     .argument('[description]', 'reason for this earning (optional)')
+    .argument('[timestamp]', 'timestamp of the transaction (will default to now if not passed')
     .action(async (args, options, logger) => {
-        logger.info(`revoking props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}`);
+        logger.info(`revoking props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description} (${args.timestamp})`);
         try {
-            await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, args.application, args.user, args.amount, args.description ? args.description : '');
+            await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, args.application, args.user, args.amount, args.description ? args.description : '', {}, args.timestamp ? args.timestamp : 0);
         } catch (e) {
             logger.error(`error issuing earning: ${e}`)
         }
@@ -53,11 +55,12 @@ cli
     .argument('<application>', 'UDID of an authorized application')
     .argument('<user>', 'UDID of an authorized application user')
     .argument('<signature>', 'signature by linked wallet of application.user')
+    .argument('[timestamp]', 'timestamp of the transaction (will default to now if not passed')
     .action(async (args, options, logger) => {
         logger.info(`linking wallet ${args.address} to application ${args.application} and user ${args.user}, 
-        using signature ${args.signature}`);
+        using signature ${args.signature} (${args.timestamp})`);
         try {
-            await pendingProps.linkWallet(args.address, args.application, args.user, args.signature);
+            await pendingProps.linkWallet(args.address, args.application, args.user, args.signature, args.timestamp ? args.timestamp : 0);
         } catch (e) {
             logger.error(`error linking wallet: ${e}`)
         }

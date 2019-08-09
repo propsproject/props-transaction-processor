@@ -315,6 +315,37 @@ func (s *State) UpdateBalance(balance pending_props_pb.Balance, updates map[stri
 		s.AddBalanceEvent(balanceEvent, "pending-props:balance", balanceUpdateAttr...)
 	}
 
+	// if there's an activity object for this day update it with new balance - (unless it's a balance of a wallet)
+	if balance.Type == pending_props_pb.BalanceType_USER {
+		rewardsDay := eth_utils.CalculateRewardsDay(balance.GetBalanceDetails().GetTimestamp(), logger)
+		activityLog := pending_props_pb.ActivityLog{
+			UserId:        balance.GetUserId(),
+			ApplicationId: balance.GetApplicationId(),
+			Date:          int32(rewardsDay),
+		}
+		activityAddress, _ := ActivityLogAddress(activityLog)
+		state, err := s.context.GetState([]string{activityAddress})
+		if err != nil {
+			logger.Infof("Could not get state data %v rewardsDay=%v, timestamp=%v (%s)", activityAddress, rewardsDay, balance.GetBalanceDetails().GetTimestamp(), err)
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", activityAddress, err)}
+		}
+		if len(string(state[activityAddress])) > 0 {
+			for _, value := range state {
+
+				err := proto.Unmarshal(value, &activityLog)
+				if err != nil {
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal activity log proto data (%s)", err)}
+				}
+			}
+			activityLog.Balance = &balance
+			activityLogBytes, err := proto.Marshal(&activityLog)
+			if err != nil {
+				return &processor.InvalidTransactionError{Msg: "could not marshal activityLog update to activityLog proto"}
+			}
+			updates[activityAddress] = activityLogBytes
+		}
+	}
+
 	updates[balanceAddress] = balanceBytes
 	return nil
 }
@@ -393,11 +424,4 @@ func (s *State) SaveBalanceUpdate(balanceUpdates ...pending_props_pb.BalanceUpda
 	}
 
 	return nil
-}
-
-func CalculateRewardsDay(timestamp int64) int64 {
-	// (block.timestamp.sub(_self.rewardsStartTimestamp)).div(_self.minSecondsBetweenDays).add(1);
-	secondsInDay := viper.GetInt64("seconds_in_day")
-	return timestamp / secondsInDay
-
 }
