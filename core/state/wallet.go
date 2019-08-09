@@ -111,6 +111,7 @@ func (s *State) UpdateLinkedWalletBalances(walletToUserData *pending_props_pb.Wa
 		unlinkedApplicationUserBalance.BalanceDetails.Transferable = big.NewInt(0).String()
 		unlinkedApplicationUserBalance.BalanceDetails.Delegated = big.NewInt(0).String()
 		unlinkedApplicationUserBalance.BalanceDetails.TotalPending = unlinkedApplicationUserBalance.GetBalanceDetails().GetPending()
+		unlinkedApplicationUserBalance.BalanceUpdateIndex = unlinkedApplicationUserBalance.GetBalanceUpdateIndex() + 1
 		err1 := s.UpdateBalance(*unlinkedApplicationUserBalance, updates, true)
 		if err1 != nil {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not update balance of unlinked application user %v (%s)", unlinkedApplicationUser.String(), err1)}
@@ -151,6 +152,7 @@ func (s *State) UpdateLinkedWalletBalances(walletToUserData *pending_props_pb.Wa
 	}
 	for _, applicationUser := range linkedWalletApplicationUsers {
 		if updatedUserBalance != nil && updatedUserBalance.GetApplicationId() == applicationUser.GetApplicationId() && updatedUserBalance.GetUserId() == applicationUser.GetUserId() {
+			updatedUserBalance.BalanceUpdateIndex = updatedUserBalance.GetBalanceUpdateIndex() + 1
 			s.UpdateBalance(*updatedUserBalance, updates, true)
 			continue
 		}
@@ -164,6 +166,7 @@ func (s *State) UpdateLinkedWalletBalances(walletToUserData *pending_props_pb.Wa
 		appUserBalance.BalanceDetails.Delegated = newWalletBalance.GetBalanceDetails().GetDelegated()
 		appUserBalance.BalanceDetails.Timestamp = timestamp
 		appUserBalance.BalanceDetails.LastUpdateType = updateType
+		appUserBalance.BalanceUpdateIndex = appUserBalance.GetBalanceUpdateIndex() + 1
 		s.UpdateBalance(*appUserBalance, updates, true)
 	}
 	return nil

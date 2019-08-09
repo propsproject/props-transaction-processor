@@ -22,6 +22,7 @@ const amounts = [125, 50.5];
 const descriptions = ["Broadcasting", "Watching"];
 const waitTimeUntilOnChain = 1300; // miliseconds
 const longerTestWaitMultiplier = 6;
+let balanceUpdateIndex = 0;
 
 // data about the ethereum transactions we're testing with
 const sawtoothPk1 = "5895c973a69c4fe662fcda172900a98bb918c0c31bf374f1b781bc34531cce3f";
@@ -127,6 +128,7 @@ describe('Sawtooth side chain test', () => {
             balancePendingAmount, balanceTotalPendingAmount;
         before(async () => {
             await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[0], descriptions[0], addresses);
+            balanceUpdateIndex += 1;
             // console.log(JSON.stringify(addresses));
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
@@ -165,6 +167,7 @@ describe('Sawtooth side chain test', () => {
             expect(balanceDetails.lastUpdateType).to.be.equal(0);
             expect(balanceObj.type).to.be.equal(0);
             expect(balanceObj.linkedWallet).to.be.equal("");
+            expect(balanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
     });
     describe('Successfully log an activity', () => {
@@ -210,6 +213,7 @@ describe('Sawtooth side chain test', () => {
             expect(balanceDetails.lastUpdateType).to.be.equal(0);
             expect(balanceObj.type).to.be.equal(0);
             expect(balanceObj.linkedWallet).to.be.equal("");
+            expect(balanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
     });
     describe('Successfully issue another earning', () => {
@@ -222,6 +226,7 @@ describe('Sawtooth side chain test', () => {
             balancePendingAmount, balanceTotalPendingAmount, activityAddress, activityOnChain, activityBalanceObj, activityBalanceDetails, activityBalancePendingAmount, activityBalanceTotalPendingAmount;
         before(async () => {
             await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[1], descriptions[1], addresses);
+            balanceUpdateIndex += 1;
             // console.log(JSON.stringify(addresses));
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
@@ -266,6 +271,7 @@ describe('Sawtooth side chain test', () => {
             expect(balanceDetails.lastUpdateType).to.be.equal(0);
             expect(balanceObj.type).to.be.equal(0);
             expect(balanceObj.linkedWallet).to.be.equal("");
+            expect(balanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
         it('Activity balance details are correctly updated', () => {
             const sum = amounts.slice(0, 2).reduce(add).toString();
@@ -276,6 +282,7 @@ describe('Sawtooth side chain test', () => {
             expect(activityBalanceDetails.lastUpdateType).to.be.equal(0);
             expect(activityBalanceObj.type).to.be.equal(0);
             expect(activityBalanceObj.linkedWallet).to.be.equal("");
+            expect(activityBalanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
     });
     describe('Successfully revoke an amount', () => {
@@ -286,6 +293,7 @@ describe('Sawtooth side chain test', () => {
             balancePendingAmount, balanceTotalPendingAmount;
         before(async () => {
             await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app, user, amounts[0], descriptions[0] + "-revoke", addresses);
+            balanceUpdateIndex += 1;
             // console.log(JSON.stringify(revokeAddress));
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
@@ -323,6 +331,7 @@ describe('Sawtooth side chain test', () => {
             expect(balanceDetails.lastUpdateType).to.be.equal(0);
             expect(balanceObj.type).to.be.equal(0);
             expect(balanceObj.linkedWallet).to.be.equal("");
+            expect(balanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
     });
 
@@ -381,6 +390,7 @@ describe('Sawtooth side chain test', () => {
         before(async () => {
             sig = await pendingProps.signMessage(`${app}_${user}`, walletAddress, walletPk);
             await pendingProps.linkWallet(walletAddress, app, user, sig);
+            balanceUpdateIndex += 1;
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
             await waitUntil(() => {
@@ -439,6 +449,7 @@ describe('Sawtooth side chain test', () => {
             expect(userBalanceObj.applicationId).to.be.equal(app);
             expect(userBalanceObj.type).to.be.equal(0);
             expect(userBalanceObj.linkedWallet).to.be.equal(walletAddress);
+            expect(userBalanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
     });
     describe('Successfully issue an earning to user with linked wallet', () => {
@@ -451,6 +462,7 @@ describe('Sawtooth side chain test', () => {
             walletBalanceTotalPendingAmount, walletBalanceTransferableAmount, expectedTransferableAmount;
         before(async () => {
             await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app, user, amounts[0], descriptions[0], addresses);
+            balanceUpdateIndex += 1;
             // console.log(JSON.stringify(addresses));
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
@@ -491,6 +503,7 @@ describe('Sawtooth side chain test', () => {
             expect(balanceObj.userId).to.be.equal(user);
             expect(balanceObj.applicationId).to.be.equal(app);
             expect(balanceObj.linkedWallet).to.be.equal(walletAddress);
+            expect(balanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
         it('Wallet balance details are correct', () => {
             expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
@@ -508,6 +521,7 @@ describe('Sawtooth side chain test', () => {
             walletBalanceTotalPendingAmount, walletBalanceTransferableAmount, expectedTransferableAmount;
         before(async () => {
             await pendingProps.transaction(pendingProps.transactionTypes.REVOKE, app, user, amounts[0], descriptions[0], addresses);
+            balanceUpdateIndex += 1;
             // console.log(JSON.stringify(revokeAddress));
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
@@ -548,6 +562,7 @@ describe('Sawtooth side chain test', () => {
             expect(balanceObj.userId).to.be.equal(user);
             expect(balanceObj.applicationId).to.be.equal(app);
             expect(balanceObj.linkedWallet).to.be.equal(walletAddress);
+            expect(balanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
         it('Wallet balance details are correct', () => {
             expect(walletBalancePendingAmount.toString()).to.be.equal('0');
@@ -555,7 +570,7 @@ describe('Sawtooth side chain test', () => {
             expect(walletBalanceTransferableAmount.toString()).to.be.equal(expectedTransferableAmount.toString());
         });
     });
-    describe('Successfully update mainchain balance of a linked wallet (2nd update)', () => {
+    describe('Successfully update mainchain balance of a linked wallet with an activity object (2nd update)', () => {
         const user = "user1";
         const app = "0x96c41cfd601a477e80fd9fbf256e767e92ac4278";
         const rewardsDay = pendingProps.calcRewardsDay(timestamp2);
@@ -574,6 +589,7 @@ describe('Sawtooth side chain test', () => {
                 return (timePassed > waitTimeUntilOnChain)
             }, 10000, 100);
             await pendingProps.externalBalanceUpdate(walletAddress, balanceAtBlock2, txHash2, blockNum2, timestamp2);
+            balanceUpdateIndex += 1;
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
             await waitUntil(() => {
@@ -629,6 +645,7 @@ describe('Sawtooth side chain test', () => {
             expect(userBalanceObj.applicationId).to.be.equal(app);
             expect(userBalanceObj.type).to.be.equal(0);
             expect(userBalanceObj.linkedWallet).to.be.equal(walletAddress);
+            expect(userBalanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
         it('Activity balance details are correct', () => {
             expect(activityBalancePendingAmount.div(1e18).toString()).to.be.equal(amounts[1].toString());
@@ -638,6 +655,7 @@ describe('Sawtooth side chain test', () => {
             expect(activityBalanceObj.applicationId).to.be.equal(app);
             expect(activityBalanceObj.type).to.be.equal(0);
             expect(activityBalanceObj.linkedWallet).to.be.equal(walletAddress);
+            expect(activityBalanceObj.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
     });
     describe('Successfully update balances with linked wallet based on settlement transaction', () => {
@@ -664,6 +682,7 @@ describe('Sawtooth side chain test', () => {
             await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0], descriptions[0], addresses);
             await pendingProps.linkWallet(user1Wallet, app1, user1, app1user1Sig);
             await pendingProps.settle(app1, user1, settlementAmount, user1Wallet, settlementApplicationRewardsAddress, settlementTxHash, settlementBlockNum, settlementTimestamp, addresses);
+
 
             // wait a bit for it to be on chain
             await waitUntil(() => {
@@ -707,6 +726,7 @@ describe('Sawtooth side chain test', () => {
             expect(balancePendingAmount.div(1e18).toString()).to.be.equal((amounts[0] - settlementAmount).toString());
             expect(balanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0] - settlementAmount).toString());
             expect(balanceTransferableAmount.toString()).to.be.equal("0");
+            expect(balanceObj.balanceUpdateIndex).to.be.equal(3);
         });
         it('Wallet balance details are correct', () => {
             expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
@@ -729,6 +749,7 @@ describe('Sawtooth side chain test', () => {
 
             // issue
             await pendingProps.linkWallet(walletAddress, app, user, sig);
+            balanceUpdateIndex += 1;
             global.timeOfStart = Math.floor(Date.now());
             // wait a bit for it to be on chain
             await waitUntil(() => {
@@ -785,6 +806,7 @@ describe('Sawtooth side chain test', () => {
             expect(userBalanceObj.applicationId).to.be.equal(app);
             expect(userBalanceObj.type).to.be.equal(0);
             expect(userBalanceObj.linkedWallet).to.be.equal(walletAddress);
+            expect(userBalanceObj.balanceUpdateIndex).to.be.equal(1);
         });
     });
     describe('Successfully issue an earning to user with linked wallet with another user', () => {
@@ -803,6 +825,7 @@ describe('Sawtooth side chain test', () => {
             pendingProps.newSigner(sawtoothPk1);
             // issue
             await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0] * 2, descriptions[0], addresses);
+            balanceUpdateIndex += 1;
             // console.log(JSON.stringify(addresses));
             earningAddresses = [];
             earningAddresses.push(addresses['stateAddress']);
@@ -843,11 +866,13 @@ describe('Sawtooth side chain test', () => {
             expect(balancePendingAmount1.div(1e18).toString()).to.be.equal((amounts[0] * 2 + amounts[1]).toString());
             expect(balanceTotalPendingAmount1.div(1e18).toString()).to.be.equal((amounts[0] * 2 + amounts[1]).toString());
             expect(balanceTransferableAmount1.toString()).to.be.equal(balanceAtBlock2.toString());
+            expect(balanceObj1.balanceUpdateIndex).to.be.equal(balanceUpdateIndex);
         });
         it('User2 Balance details are correct', () => {
             expect(balancePendingAmount2.div(1e18).toString()).to.be.equal('0');
             expect(balanceTotalPendingAmount2.div(1e18).toString()).to.be.equal((amounts[0] * 2 + amounts[1]).toString());
             expect(balanceTransferableAmount2.toString()).to.be.equal(balanceAtBlock2.toString());
+            expect(balanceObj2.balanceUpdateIndex).to.be.equal(2);
         });
 
         it('Wallet Balance details are correct', () => {

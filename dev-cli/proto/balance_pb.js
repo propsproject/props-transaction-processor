@@ -433,7 +433,8 @@ proto.pending_props_pb.Balance.toObject = function(includeInstance, msg) {
     balanceDetails: (f = msg.getBalanceDetails()) && proto.pending_props_pb.BalanceDetails.toObject(includeInstance, f),
     preCutoffDetails: (f = msg.getPreCutoffDetails()) && proto.pending_props_pb.BalanceDetails.toObject(includeInstance, f),
     type: jspb.Message.getFieldWithDefault(msg, 5, 0),
-    linkedWallet: jspb.Message.getFieldWithDefault(msg, 6, "")
+    linkedWallet: jspb.Message.getFieldWithDefault(msg, 6, ""),
+    balanceUpdateIndex: jspb.Message.getFieldWithDefault(msg, 7, 0)
   };
 
   if (includeInstance) {
@@ -495,6 +496,10 @@ proto.pending_props_pb.Balance.deserializeBinaryFromReader = function(msg, reade
     case 6:
       var value = /** @type {string} */ (reader.readString());
       msg.setLinkedWallet(value);
+      break;
+    case 7:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setBalanceUpdateIndex(value);
       break;
     default:
       reader.skipField();
@@ -566,6 +571,13 @@ proto.pending_props_pb.Balance.serializeBinaryToWriter = function(message, write
   if (f.length > 0) {
     writer.writeString(
       6,
+      f
+    );
+  }
+  f = message.getBalanceUpdateIndex();
+  if (f !== 0) {
+    writer.writeInt64(
+      7,
       f
     );
   }
@@ -695,6 +707,21 @@ proto.pending_props_pb.Balance.prototype.getLinkedWallet = function() {
 /** @param {string} value */
 proto.pending_props_pb.Balance.prototype.setLinkedWallet = function(value) {
   jspb.Message.setProto3StringField(this, 6, value);
+};
+
+
+/**
+ * optional int64 balance_update_index = 7;
+ * @return {number}
+ */
+proto.pending_props_pb.Balance.prototype.getBalanceUpdateIndex = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 7, 0));
+};
+
+
+/** @param {number} value */
+proto.pending_props_pb.Balance.prototype.setBalanceUpdateIndex = function(value) {
+  jspb.Message.setProto3IntField(this, 7, value);
 };
 
 

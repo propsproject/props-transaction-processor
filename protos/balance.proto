@@ -31,4 +31,5 @@ message Balance {
     BalanceDetails pre_cutoff_details = 4;
     BalanceType type = 5;
     string linked_wallet = 6;
+    int64 balance_update_index = 7;
 }

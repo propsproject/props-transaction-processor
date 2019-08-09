@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
 	"github.com/spf13/viper"
 	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -286,6 +287,7 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Failed to update linked balances (%v)", walletToUserData.String())}
 		}
 	} else {
+		balanceUser.BalanceUpdateIndex = balanceUser.GetBalanceUpdateIndex() + 1
 		err := s.UpdateBalance(balanceUser, updates, true)
 		if err != nil {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not save balance %v (%s)", balanceUser.String(), err)}
@@ -311,6 +313,7 @@ func (s *State) UpdateBalance(balance pending_props_pb.Balance, updates map[stri
 			processor.Attribute{"application", balance.GetApplicationId()},
 			processor.Attribute{"event_type", pending_props_pb.EventType_BalanceUpdated.String()},
 			processor.Attribute{"balance_type", balance.GetType().String()},
+			processor.Attribute{ "balance_update_index", strconv.FormatInt(balance.GetBalanceUpdateIndex(), 10)},
 		}
 		s.AddBalanceEvent(balanceEvent, "pending-props:balance", balanceUpdateAttr...)
 	}
