@@ -320,7 +320,7 @@ func (s *State) UpdateBalance(balance pending_props_pb.Balance, updates map[stri
 
 	// if there's an activity object for this day update it with new balance - (unless it's a balance of a wallet)
 	if balance.Type == pending_props_pb.BalanceType_USER {
-		rewardsDay := eth_utils.CalculateRewardsDay(balance.GetBalanceDetails().GetTimestamp(), logger)
+		rewardsDay := eth_utils.CalculateRewardsDay(balance.GetBalanceDetails().GetTimestamp())
 		activityLog := pending_props_pb.ActivityLog{
 			UserId:        balance.GetUserId(),
 			ApplicationId: balance.GetApplicationId(),

@@ -30,11 +30,11 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 
 	// Fetch the timestamp of the last eth block address
 	for _, activity := range activities {
-		calculatedActivityRewardsDay := eth_utils.CalculateRewardsDay(activity.GetTimestamp(), logger)
+		calculatedActivityRewardsDay := eth_utils.CalculateRewardsDay(activity.GetTimestamp())
 		if int64(activity.GetDate()) != calculatedActivityRewardsDay {
 			logger.Infof("Activity rewards day does not match timestamp rewards day %v, %v", activity.GetDate(), calculatedActivityRewardsDay)
 		}
-		calculatedEthRewardsDay := eth_utils.CalculateRewardsDay(lastEthBlockData.GetTimestamp(), logger)
+		calculatedEthRewardsDay := eth_utils.CalculateRewardsDay(lastEthBlockData.GetTimestamp())
 		// allow for deviation by 1 day in the future max
 		if (int64(activity.GetDate()) - calculatedEthRewardsDay) <= 1 {
 			logger.Infof("Activity rewards day does not match eth block rewards day %v, %v", activity.GetDate(), calculatedEthRewardsDay)
