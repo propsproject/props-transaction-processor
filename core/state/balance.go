@@ -329,7 +329,7 @@ func (s *State) UpdateBalance(balance pending_props_pb.Balance, updates map[stri
 		activityAddress, _ := ActivityLogAddress(activityLog)
 		state, err := s.context.GetState([]string{activityAddress})
 		if err != nil {
-			logger.Infof("Could not get state data %v rewardsDay=%v, timestamp=%v (%s)", activityAddress, rewardsDay, balance.GetBalanceDetails().GetTimestamp(), err)
+			logger.Infof("Could not get state data %v rewardsDay=%v, timestamp=%v, balance.userId=%v, balance.applicationId=%v (%s)", activityAddress, rewardsDay, balance.GetBalanceDetails().GetTimestamp(), balance.GetUserId(), balance.GetApplicationId(), err)
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", activityAddress, err)}
 		}
 		if len(string(state[activityAddress])) > 0 {

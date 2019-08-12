@@ -36,8 +36,8 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 		}
 		calculatedEthRewardsDay := eth_utils.CalculateRewardsDay(lastEthBlockData.GetTimestamp())
 		// allow for deviation by 1 day in the future max
-		if (int64(activity.GetDate()) - calculatedEthRewardsDay) <= 1 {
-			logger.Infof("Activity rewards day does not match eth block rewards day %v, %v", activity.GetDate(), calculatedEthRewardsDay)
+		if (int64(activity.GetDate()) - calculatedEthRewardsDay) > 1 {
+			logger.Infof("Activity rewards day does not match eth block rewards day %v, %v, %v", activity.GetDate(), calculatedEthRewardsDay, int64(activity.GetDate()) - calculatedEthRewardsDay)
 		}
 		activityAddress, _ := ActivityLogAddress(activity)
 
