@@ -27,7 +27,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	existingTxStateData, err := s.context.GetState([]string{updateBalanceTransactionAddress})
 	if err == nil && len(string(existingTxStateData[updateBalanceTransactionAddress])) == 0 {
 		logger.Infof(fmt.Sprintf("New updateBalanceTransactionAddress %v, (balanceUpdate for %v)", updateBalanceTransactionAddress, balanceUpdate.GetPublicAddress()))
-		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url"))
+		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url_tp"))
 		if err != nil {
 			logger.Infof("Could not connect to main-chain to verify balance update %v",err)
 			token.RPC.Close()

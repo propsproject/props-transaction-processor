@@ -4,7 +4,7 @@
   "name": "pendings-props-tp",
   "verbose": "debug",
   "validator_url": "",
-  "ethereum_url": "",
+  "ethereum_url_tp": "",
   "worker-queue": 100,
   "threads": 0,
   "props_token_contract_address": "",
