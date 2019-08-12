@@ -68,6 +68,7 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 				}
 			}
 			activity.Balance = &balanceData
+			logger.Info("Updating the activity state address %v for %v, %v", activityAddress, activity.GetApplicationId(), activity.GetUserId())
 			b, err := proto.Marshal(&activity)
 			if err != nil {
 				return &processor.InvalidTransactionError{Msg: "could not marshal activity proto"}
@@ -80,7 +81,7 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 
 	if len(stateUpdate) > 0 {
 		_, err := s.context.SetState(stateUpdate)
-		logger.Info("Updating the activity state ...")
+
 		if err != nil {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not set state (%s)", err)}
 		}
