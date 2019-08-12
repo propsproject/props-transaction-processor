@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
 	"github.com/spf13/viper"
 	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -100,7 +101,6 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 	newBalanceWallet := pending_props_pb.Balance{
 		UserId:                 eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()),
 		BalanceDetails:         &newBalanceDetails,
-		PreCutoffDetails:       &newBalanceDetails,
 		Type:          pending_props_pb.BalanceType_WALLET,
 	}
 
@@ -122,23 +122,6 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal proto data (%s)", err)}
 			}
 		}
-		// if the new balance timestamp day is bigger than current one, store current in PreCutOff one
-		if balanceWallet.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(newBalanceDetails.GetTimestamp()) > CalculateRewardsDay(balanceWallet.GetBalanceDetails().GetTimestamp()) {
-			logger.Infof("Updating PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
-				newBalanceDetails.GetTimestamp(), balanceWallet.GetBalanceDetails().GetTimestamp(), balanceWallet.GetPreCutoffDetails().GetTimestamp())
-			//balanceWallet.PreCutoffDetails = balanceWallet.GetBalanceDetails()
-			balanceWallet.PreCutoffDetails = &pending_props_pb.BalanceDetails{
-				Pending:  balanceWallet.GetBalanceDetails().GetPending(),
-				TotalPending:  balanceWallet.GetBalanceDetails().GetTotalPending(),
-				Transferable:  balanceWallet.GetBalanceDetails().GetTransferable(),
-				Bonded: balanceWallet.GetBalanceDetails().GetBonded(),
-				Delegated: balanceWallet.GetBalanceDetails().GetDelegated(),
-				DelegatedTo: balanceWallet.GetBalanceDetails().GetDelegatedTo(),
-				Timestamp: balanceWallet.GetBalanceDetails().GetTimestamp(),
-				LastUpdateType: balanceWallet.GetBalanceDetails().GetLastUpdateType(),
-				LastEthBlockId: balanceWallet.GetBalanceDetails().GetLastEthBlockId(),
-			}
-		}
 		balanceWallet.BalanceDetails.Transferable = balanceUpdate.GetOnchainBalance()
 		balanceWallet.BalanceDetails.Timestamp = newBalanceDetails.GetTimestamp()
 		balanceWallet.BalanceDetails.LastEthBlockId = balanceUpdate.GetBlockId()
@@ -147,14 +130,11 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 		logger.Infof("Update recipient balance will be %v,%v", balanceWallet.BalanceDetails.Pending, balanceWallet.BalanceDetails.TotalPending)
 	}
 
-
-	logger.Infof("Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
-		newBalanceDetails.GetTimestamp(), balanceWallet.GetBalanceDetails().GetTimestamp(), balanceWallet.GetPreCutoffDetails().GetTimestamp())
 	// save balance wallet
 	s.UpdateBalance(balanceWallet, updates, true)
 	// check if it's linked to a wallet with more users and update them as needed
 	applicationUsers := make([]*pending_props_pb.ApplicationUser, 0)
-	walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: balanceWallet.GetUserId()})
+	walletLinkAddress, _ := WalletLinkAddress(balanceWallet.GetUserId())
 	state1, err1 := s.context.GetState([]string{walletLinkAddress})
 	var walletToUserData pending_props_pb.WalletToUser
 	if err1 != nil {
@@ -174,7 +154,7 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 		applicationUsers = walletToUserData.GetUsers()
 	}
 
-	err2 := s.UpdateLinkedWalletBalances(applicationUsers, balanceWallet, true, updates)
+	err2 := s.UpdateLinkedWalletBalances(&walletToUserData, nil, applicationUsers, updates, balanceUpdate.GetTimestamp(), pending_props_pb.UpdateType_PROPS_BALANCE, nil, &balanceWallet)
 	if err2 != nil {
 		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not save balances (%s)", err2)}
 	}
@@ -215,7 +195,6 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 		UserId: userId,
 		ApplicationId: applicationId,
 		BalanceDetails: &newBalanceDetails,
-		PreCutoffDetails: &newBalanceDetails,
 		Type: pending_props_pb.BalanceType_USER,
 	}
 
@@ -238,23 +217,6 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 			err := proto.Unmarshal(value, &balanceUser)
 			if err != nil {
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal proto data (%s)", err)}
-			}
-		}
-
-		if balanceUser.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(newBalanceDetails.GetTimestamp()) > CalculateRewardsDay(balanceUser.GetBalanceDetails().GetTimestamp()) {
-			logger.Infof("Updating PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
-				newBalanceDetails.GetTimestamp(), balanceUser.GetBalanceDetails().GetTimestamp(), balanceUser.GetPreCutoffDetails().GetTimestamp())
-			//balanceUser.PreCutoffDetails = balanceUser.GetBalanceDetails()
-			balanceUser.PreCutoffDetails = &pending_props_pb.BalanceDetails{
-				Pending:  balanceUser.GetBalanceDetails().GetPending(),
-				TotalPending:  balanceUser.GetBalanceDetails().GetTotalPending(),
-				Transferable:  balanceUser.GetBalanceDetails().GetTransferable(),
-				Bonded: balanceUser.GetBalanceDetails().GetBonded(),
-				Delegated: balanceUser.GetBalanceDetails().GetDelegated(),
-				DelegatedTo: balanceUser.GetBalanceDetails().GetDelegatedTo(),
-				Timestamp: balanceUser.GetBalanceDetails().GetTimestamp(),
-				LastUpdateType: balanceUser.GetBalanceDetails().GetLastUpdateType(),
-				LastEthBlockId: balanceUser.GetBalanceDetails().GetLastEthBlockId(),
 			}
 		}
 
@@ -289,7 +251,7 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 	// check if it's linked to a wallet with more users
 	applicationUsers := make([]*pending_props_pb.ApplicationUser, 0)
 	if len(balanceUser.GetLinkedWallet())>0 {
-		walletLinkAddress, _ := WalletLinkAddress(pending_props_pb.WalletToUser{ Address: balanceUser.GetLinkedWallet()})
+		walletLinkAddress, _ := WalletLinkAddress(balanceUser.GetLinkedWallet())
 		state, err := s.context.GetState([]string{walletLinkAddress})
 		var walletToUserData pending_props_pb.WalletToUser
 		if err != nil {
@@ -315,41 +277,22 @@ func (s *State) UpdateBalanceFromTransaction(userId, applicationId string, amoun
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("if wallet is linked walletBalance object must exist at (%v)", walletBalanceAddress)}
 			}
 
-			if walletBalance.GetPreCutoffDetails().GetTimestamp() == 0 || CalculateRewardsDay(newBalanceDetails.GetTimestamp()) > CalculateRewardsDay(walletBalance.GetBalanceDetails().GetTimestamp()) {
-				logger.Infof("Updating walletBalance PreCutoff New Balance Timestamp %v, Current Balance Timestamp %v, PreCutoff Balance Timestamp %v",
-					newBalanceDetails.GetTimestamp(), walletBalance.GetBalanceDetails().GetTimestamp(), walletBalance.GetPreCutoffDetails().GetTimestamp())
-				//walletBalance.PreCutoffDetails = walletBalance.GetBalanceDetails()
-				walletBalance.PreCutoffDetails = &pending_props_pb.BalanceDetails{
-					Pending:  balanceUser.GetPreCutoffDetails().GetPending(),
-					TotalPending:  balanceUser.GetPreCutoffDetails().GetTotalPending(),
-					Transferable:  balanceUser.GetPreCutoffDetails().GetTransferable(),
-					Bonded: balanceUser.GetPreCutoffDetails().GetBonded(),
-					Delegated: balanceUser.GetPreCutoffDetails().GetDelegated(),
-					DelegatedTo: balanceUser.GetPreCutoffDetails().GetDelegatedTo(),
-					Timestamp: balanceUser.GetPreCutoffDetails().GetTimestamp(),
-					LastUpdateType: balanceUser.GetPreCutoffDetails().GetLastUpdateType(),
-					LastEthBlockId: balanceUser.GetPreCutoffDetails().GetLastEthBlockId(),
-				}
-			}
-
-			walletBalance.BalanceDetails.TotalPending = balanceUser.GetBalanceDetails().GetTotalPending()
-			walletBalance.BalanceDetails.LastUpdateType = balanceUser.GetBalanceDetails().GetLastUpdateType()
-			walletBalance.BalanceDetails.Timestamp = balanceUser.GetBalanceDetails().GetTimestamp()
 			if newBalanceAmount != nil {
 				walletBalance.BalanceDetails.Transferable = newBalanceAmount.String()
+				s.UpdateBalance(*walletBalance, updates, true)
 			}
-
-			s.UpdateBalance(*walletBalance, updates, true)
+		}
+		err1 := s.UpdateLinkedWalletBalances(&walletToUserData, nil, applicationUsers, updates, timestamp, pending_props_pb.UpdateType_PENDING_PROPS_BALANCE, &balanceUser, nil)
+		if err1 != nil {
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Failed to update linked balances (%v)", walletToUserData.String())}
 		}
 	} else {
-		applicationUsers = append(applicationUsers, &pending_props_pb.ApplicationUser{ ApplicationId: balanceUser.GetApplicationId(), UserId: balanceUser.GetUserId()})
+		balanceUser.BalanceUpdateIndex = balanceUser.GetBalanceUpdateIndex() + 1
+		err := s.UpdateBalance(balanceUser, updates, true)
+		if err != nil {
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not save balance %v (%s)", balanceUser.String(), err)}
+		}
 	}
-	err1 := s.UpdateLinkedWalletBalances(applicationUsers, balanceUser, false, updates)
-	if err1 != nil {
-		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not save balances (%s)", err1)}
-	}
-	logger.Infof("Update balance will be %v,%v", balanceUser.BalanceDetails.GetPending(), balanceUser.BalanceDetails.GetTotalPending())
-
 	return nil
 }
 
@@ -370,8 +313,40 @@ func (s *State) UpdateBalance(balance pending_props_pb.Balance, updates map[stri
 			processor.Attribute{"application", balance.GetApplicationId()},
 			processor.Attribute{"event_type", pending_props_pb.EventType_BalanceUpdated.String()},
 			processor.Attribute{"balance_type", balance.GetType().String()},
+			processor.Attribute{ "balance_update_index", strconv.FormatInt(balance.GetBalanceUpdateIndex(), 10)},
 		}
 		s.AddBalanceEvent(balanceEvent, "pending-props:balance", balanceUpdateAttr...)
+	}
+
+	// if there's an activity object for this day update it with new balance - (unless it's a balance of a wallet)
+	if balance.Type == pending_props_pb.BalanceType_USER {
+		rewardsDay := eth_utils.CalculateRewardsDay(balance.GetBalanceDetails().GetTimestamp())
+		activityLog := pending_props_pb.ActivityLog{
+			UserId:        balance.GetUserId(),
+			ApplicationId: balance.GetApplicationId(),
+			Date:          int32(rewardsDay),
+		}
+		activityAddress, _ := ActivityLogAddress(activityLog)
+		state, err := s.context.GetState([]string{activityAddress})
+		if err != nil {
+			logger.Infof("Could not get state data %v rewardsDay=%v, timestamp=%v, balance.userId=%v, balance.applicationId=%v (%s)", activityAddress, rewardsDay, balance.GetBalanceDetails().GetTimestamp(), balance.GetUserId(), balance.GetApplicationId(), err)
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state data %v (%s)", activityAddress, err)}
+		}
+		if len(string(state[activityAddress])) > 0 {
+			for _, value := range state {
+
+				err := proto.Unmarshal(value, &activityLog)
+				if err != nil {
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal activity log proto data (%s)", err)}
+				}
+			}
+			activityLog.Balance = &balance
+			activityLogBytes, err := proto.Marshal(&activityLog)
+			if err != nil {
+				return &processor.InvalidTransactionError{Msg: "could not marshal activityLog update to activityLog proto"}
+			}
+			updates[activityAddress] = activityLogBytes
+		}
 	}
 
 	updates[balanceAddress] = balanceBytes
@@ -452,11 +427,4 @@ func (s *State) SaveBalanceUpdate(balanceUpdates ...pending_props_pb.BalanceUpda
 	}
 
 	return nil
-}
-
-func CalculateRewardsDay(timestamp int64) int64 {
-	// (block.timestamp.sub(_self.rewardsStartTimestamp)).div(_self.minSecondsBetweenDays).add(1);
-	secondsInDay := viper.GetInt64("seconds_in_day")
-	return timestamp / secondsInDay
-
 }

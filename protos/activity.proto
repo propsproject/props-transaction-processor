@@ -1,9 +1,11 @@
 syntax = "proto3";
 package pending_props_pb;
+import "balance.proto";
 
 message ActivityLog {
     string user_id = 1;
     string application_id = 2;
     int32 date = 3;
     int64 timestamp = 4;
+    Balance balance = 5;
 }

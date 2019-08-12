@@ -5,7 +5,7 @@
   "license": "ISC",
   "scripts": {
     "genesis": "node ./genesis.js",
-    "test": "NODE_ENV=test mocha --timeout 180000 $NODE_DEBUG_OPTION test/test.js --exit || :",
+    "test": "NODE_ENV=test mocha --timeout 300000 $NODE_DEBUG_OPTION test/test.js --exit || :",
     "pretest": "rm -f /tmp/out.log && cd scripts && sh ./local-sawtooth.sh && cd ../../ && cd dev-cli",
     "posttest": "kill $(ps aux | egrep '[g]o run cmd/main.go -c -f ./configs/development.json|[d]ocker-compose -f ./sawtooth-default.yaml up|[/]var.*configs/development' | awk '{print $2}') && cd scripts && sh ./destroy-local-sawtooth.sh && cd ../"
   },

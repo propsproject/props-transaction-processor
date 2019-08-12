@@ -9,6 +9,7 @@ enum BalanceType {
 enum UpdateType {
     PENDING_PROPS_BALANCE = 0;
     PROPS_BALANCE = 1;
+    WALLET_LINK_BALANCE = 2;
 }
 
 message BalanceDetails {
@@ -30,4 +31,5 @@ message Balance {
     BalanceDetails pre_cutoff_details = 4;
     BalanceType type = 5;
     string linked_wallet = 6;
+    int64 balance_update_index = 7;
 }

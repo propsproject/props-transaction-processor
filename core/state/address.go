@@ -105,8 +105,8 @@ func BalanceAddressByAppUser(applicationId, userId string) (string, int) {
 	return NewAddress(NamespaceManager.BalancePrefix()).AddParts(NewPart(applicationId, 0, 10), NewPart(userId, 0, 54)).Build(false)
 }
 
-func WalletLinkAddress(walletLink pending_props_pb.WalletToUser) (string, int) {
-	return NewAddress(NamespaceManager.WalletLinkPrefix()).AddParts(NewPart(eth_utils.NormalizeAddress(walletLink.GetAddress()), 0, 64)).Build(false)
+func WalletLinkAddress(address string) (string, int) {
+	return NewAddress(NamespaceManager.WalletLinkPrefix()).AddParts(NewPart(eth_utils.NormalizeAddress(address), 0, 64)).Build(false)
 }
 
 func BalanceUpdatesTransactionHashAddress(ethTxHash string, address string) (string, int) {
