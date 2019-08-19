@@ -12,5 +12,5 @@
   "valid_signers_addresses": "{\"0xa80a6946f8af393d422cd6feee9040c25121a3b8\":\"younow-app\",\"0xfaB0fc31a4d8F08fE81eDD1fb82B92Ac8F954a48\":\"younow-validator\"}",
   "confirmation-blocks": 15,
   "seconds_in_day": 86400,
-  "rewards_start_timestamp": 1561248000
+  "rewards_start_timestamp": 1562803200
 }
