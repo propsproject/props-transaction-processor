@@ -120,6 +120,17 @@ cli
            logger.error(`error logging activity: ${e}`);
        }
     })
+    .command('activityAddress', 'Get activity address')
+    .argument('<userId>', 'User id')
+    .argument('<appId>', 'Application id')
+    .argument('<date>', 'The timestamp')
+    .action(async (args, options, logger) => {
+        try {
+            logger.info(pendingProps.CONFIG.earnings.namespaces.activityLogAddress(args.date, args.appId, args.userId));
+        } catch (e) {
+            logger.error(`error logging activity: ${e}`);
+        }
+    })
     .command('balance-address', 'Get balance address')
     .argument('<application>', 'UDID of an authorized application')
     .argument('<user>', 'UDID of an authorized application user')

@@ -204,7 +204,7 @@ func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) e
 		}
 		err1 := s.UpdateLinkedWalletBalances(&walletToUser, unlinkedApplicationUser, linkedApplicationUsers, stateUpdate, walletToUser.GetUsers()[0].GetTimestamp(), pending_props_pb.UpdateType_WALLET_LINK_BALANCE, nil, nil)
 		if err1 != nil {
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not update linked balances %v (%s)", walletToUser.String(), err)}
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not update linked balances %v (%s)", walletToUser.String(), err1)}
 		}
 	}
 
