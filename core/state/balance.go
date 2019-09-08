@@ -340,12 +340,16 @@ func (s *State) UpdateBalance(balance pending_props_pb.Balance, updates map[stri
 					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal activity log proto data (%s)", err)}
 				}
 			}
-			activityLog.Balance = &balance
-			activityLogBytes, err := proto.Marshal(&activityLog)
-			if err != nil {
-				return &processor.InvalidTransactionError{Msg: "could not marshal activityLog update to activityLog proto"}
+			logger.Infof("******* activity.Date=%v, rewardsDay=%v", activityLog.GetDate(), int32(rewardsDay))
+			if activityLog.GetDate() == int32(rewardsDay) { // update activity balance object only if user has activity the day of the update
+				activityLog.Balance = &balance
+				activityLogBytes, err := proto.Marshal(&activityLog)
+				if err != nil {
+					return &processor.InvalidTransactionError{Msg: "could not marshal activityLog update to activityLog proto"}
+				}
+				updates[activityAddress] = activityLogBytes
 			}
-			updates[activityAddress] = activityLogBytes
+
 		}
 	}
 
