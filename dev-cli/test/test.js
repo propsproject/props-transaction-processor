@@ -586,7 +586,7 @@ describe('Sawtooth side chain test', () => {
             await waitUntil(() => {
                 const timePassed = Math.floor(Date.now()) - global.timeOfStart;
                 // console.log(`waiting for transaction ${ Math.floor(Date.now() / 1000) - global.timeOfStart}...`);
-                return (timePassed > waitTimeUntilOnChain)
+                return (timePassed > waitTimeUntilOnChain * 2)
             }, 10000, 100);
             await pendingProps.externalBalanceUpdate(walletAddress, balanceAtBlock2, txHash2, blockNum2, timestamp2);
             balanceUpdateIndex += 1;

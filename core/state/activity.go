@@ -46,8 +46,17 @@ func (s *State) SaveActivityLog(activities ...pending_props_pb.ActivityLog) erro
 		if err != nil {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get state (%s)", err)}
 		}
+		var activityLog pending_props_pb.ActivityLog
+		if len(string(activityData[activityAddress])) > 0 {
+			for _, value := range activityData {
 
-		if len(string(activityData[activityAddress])) == 0 {
+				err := proto.Unmarshal(value, &activityLog)
+				if err != nil {
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal activity log proto data (%s)", err)}
+				}
+			}
+		}
+		if len(string(activityData[activityAddress])) == 0 || activityLog.GetDate() != activity.GetDate() {
 			// check if there's a balance object for this user
 			balanceAddress, _ := BalanceAddressByAppUser(activity.GetApplicationId(), activity.GetUserId())
 			balanceStateData, err := s.context.GetState([]string{balanceAddress})
