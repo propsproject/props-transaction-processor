@@ -2,6 +2,14 @@ const pendingProps = require('./pending-props');
 const cli = require('caporal');
 const figlet = require('figlet');
 
+// console.log(`blockUpdateAddress=`+pendingProps.CONFIG.earnings.namespaces.blockUpdateAddress());
+// console.log(`activityLogAddress=`+pendingProps.CONFIG.earnings.namespaces.activityLogAddress('2','1','1'));
+// console.log(`balanceUpdateAddress=`+pendingProps.CONFIG.earnings.namespaces.balanceUpdateAddress('xx','0x00'));
+// console.log(`settlementAddress=`+pendingProps.CONFIG.earnings.namespaces.settlementAddress('tt'));
+// console.log(`balanceAddress=`+pendingProps.CONFIG.earnings.namespaces.balanceAddress('1','1'));
+// console.log(`walletLinkAddress=`+pendingProps.CONFIG.earnings.namespaces.walletLinkAddress('1'));
+// console.log(`transactionAddress=`+pendingProps.CONFIG.earnings.namespaces.transactionAddress('1','1','1','1'));
+// process.exit(1);
 // const sigTest = async () => {
 //     const sig = await pendingProps.signMessage(`app1user1`, '0x2d4dcf292bc5bd8d7246099052dfc76b3cdd3524', '759b603832da1100ab47c0f4aa6d445637eb5873d25cadd40484c48970b814d7'); // "signature11";
 //     console.log("sig="+sig);

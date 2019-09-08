@@ -1,7 +1,6 @@
 package state
 
 import (
-	"fmt"
 	"github.com/propsproject/props-transaction-processor/core/eth-utils"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"strconv"
@@ -122,7 +121,7 @@ func LastEthBlockAddress() (string, int) {
 }
 
 func ActivityLogAddress(activity pending_props_pb.ActivityLog) (string, int) {
-	return NewAddress(NamespaceManager.ActivityLogPrefix()).AddParts(NewPart(fmt.Sprint(activity.GetDate()), 0, 8), NewPart(activity.GetApplicationId(), 0, 10), NewPart(activity.GetUserId(), 0, 46)).Build(false)
+	return NewAddress(NamespaceManager.ActivityLogPrefix()).AddParts(NewPart(activity.GetApplicationId(), 0, 16), NewPart(activity.GetUserId(), 0, 48)).Build(false)
 }
 
 func RewardEntityAddressBySidechainAddress(rewardEntity pending_props_pb.RewardEntity) (string, int) {
