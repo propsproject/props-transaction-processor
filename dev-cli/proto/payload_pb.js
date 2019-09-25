@@ -890,7 +890,8 @@ proto.pending_props_pb.SettlementData.toObject = function(includeInstance, msg) 
     fromAddress: jspb.Message.getFieldWithDefault(msg, 5, ""),
     txHash: jspb.Message.getFieldWithDefault(msg, 6, ""),
     blockId: jspb.Message.getFieldWithDefault(msg, 7, 0),
-    timestamp: jspb.Message.getFieldWithDefault(msg, 8, 0)
+    timestamp: jspb.Message.getFieldWithDefault(msg, 8, 0),
+    onchainBalance: jspb.Message.getFieldWithDefault(msg, 9, "")
   };
 
   if (includeInstance) {
@@ -958,6 +959,10 @@ proto.pending_props_pb.SettlementData.deserializeBinaryFromReader = function(msg
     case 8:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setTimestamp(value);
+      break;
+    case 9:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setOnchainBalance(value);
       break;
     default:
       reader.skipField();
@@ -1041,6 +1046,13 @@ proto.pending_props_pb.SettlementData.serializeBinaryToWriter = function(message
   if (f !== 0) {
     writer.writeInt64(
       8,
+      f
+    );
+  }
+  f = message.getOnchainBalance();
+  if (f.length > 0) {
+    writer.writeString(
+      9,
       f
     );
   }
@@ -1164,6 +1176,21 @@ proto.pending_props_pb.SettlementData.prototype.getTimestamp = function() {
 /** @param {number} value */
 proto.pending_props_pb.SettlementData.prototype.setTimestamp = function(value) {
   jspb.Message.setProto3IntField(this, 8, value);
+};
+
+
+/**
+ * optional string onchain_balance = 9;
+ * @return {string}
+ */
+proto.pending_props_pb.SettlementData.prototype.getOnchainBalance = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 9, ""));
+};
+
+
+/** @param {string} value */
+proto.pending_props_pb.SettlementData.prototype.setOnchainBalance = function(value) {
+  jspb.Message.setProto3StringField(this, 9, value);
 };
 
 
