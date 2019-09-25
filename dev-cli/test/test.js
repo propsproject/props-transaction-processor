@@ -681,7 +681,7 @@ describe('Sawtooth side chain test', () => {
         before(async () => {
             await pendingProps.transaction(pendingProps.transactionTypes.ISSUE, app1, user1, amounts[0], descriptions[0], addresses);
             await pendingProps.linkWallet(user1Wallet, app1, user1, app1user1Sig);
-            await pendingProps.settle(app1, user1, settlementAmount, user1Wallet, settlementApplicationRewardsAddress, settlementTxHash, settlementBlockNum, settlementTimestamp, addresses);
+            await pendingProps.settle(app1, user1, settlementAmount, user1Wallet, settlementApplicationRewardsAddress, settlementTxHash, settlementBlockNum, settlementTimestamp, '25000000000000000000', addresses);
 
 
             // wait a bit for it to be on chain
@@ -725,13 +725,13 @@ describe('Sawtooth side chain test', () => {
         it('User balance details are correct', () => {
             expect(balancePendingAmount.div(1e18).toString()).to.be.equal((amounts[0] - settlementAmount).toString());
             expect(balanceTotalPendingAmount.div(1e18).toString()).to.be.equal((amounts[0] - settlementAmount).toString());
-            expect(balanceTransferableAmount.toString()).to.be.equal("0");
+            expect(balanceTransferableAmount.toString()).to.be.equal("25000000000000000000");
             expect(balanceObj.balanceUpdateIndex).to.be.equal(3);
         });
         it('Wallet balance details are correct', () => {
             expect(walletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
             expect(walletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal('0');
-            expect(walletBalanceTransferableAmount.toString()).to.be.equal("0");
+            expect(walletBalanceTransferableAmount.toString()).to.be.equal("25000000000000000000");
         });
     });
     describe('Successfully link another app user to same wallet', () => {

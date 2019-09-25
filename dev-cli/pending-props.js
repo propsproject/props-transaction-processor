@@ -484,7 +484,7 @@ const linkWallet = async (address, applicationId, userId, signature, _timestamp 
     return await submitTransaction(transactionHeaderBytes, requestBytes);
 };
 // await pendingProps.settle(args.application, args.user, args.amount, args.toaddress, args.fromaddress, args.ethtransactionhash, args.blockid, args.timestamp);
-const settle = async (applicationId, userId, amount, toAddress, fromAddress, txHash, blockId, timestamp, addresses = {}) => {
+const settle = async (applicationId, userId, amount, toAddress, fromAddress, txHash, blockId, timestamp, onchainBalance, addresses = {}) => {
 
     const settlementData = new payloads_pb.SettlementData();
     settlementData.setApplicationId(applicationId);
@@ -497,6 +497,7 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
     settlementData.setTxHash(txHash);
     settlementData.setBlockId(blockId);
     settlementData.setTimestamp(timestamp);
+    settlementData.setOnchainBalance(onchainBalance);
 
     //setup RPC request
     const params = new any.Any();

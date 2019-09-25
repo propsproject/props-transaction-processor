@@ -1,15 +1,11 @@
 package state
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	"github.com/propsproject/goprops-toolkit/propstoken/bindings/token"
+	"github.com/hyperledger/sawtooth-sdk-go/processor"
 	"github.com/propsproject/props-transaction-processor/core/eth-utils"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
-	"github.com/hyperledger/sawtooth-sdk-go/processor"
-	"github.com/spf13/viper"
 	"math/big"
 	"strconv"
 	"strings"
@@ -25,62 +21,11 @@ func (s *State) UpdateBalanceFromMainchainEvent(balanceUpdate pending_props_pb.B
 
 	updateBalanceTransactionAddress, _ := BalanceUpdatesTransactionHashAddress(eth_utils.NormalizeAddress(balanceUpdate.GetTxHash()), balanceUpdate.GetPublicAddress())
 	existingTxStateData, err := s.context.GetState([]string{updateBalanceTransactionAddress})
-	if err == nil && len(string(existingTxStateData[updateBalanceTransactionAddress])) == 0 {
-		logger.Infof(fmt.Sprintf("New updateBalanceTransactionAddress %v, (balanceUpdate for %v)", updateBalanceTransactionAddress, balanceUpdate.GetPublicAddress()))
-		token, err := propstoken.NewPropsTokenHTTPClient(viper.GetString("props_token_contract_address"), viper.GetString("ethereum_url_tp"))
-		if err != nil {
-			logger.Infof("Could not connect to main-chain to verify balance update %v",err)
-			token.RPC.Close()
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not connect to main-chain to verify balance update (%s) (balanceUpdate for %v)", err,  balanceUpdate.GetPublicAddress())}
-		}
-		latestHeader, err := token.RPC.HeaderByNumber(context.Background(), nil)
-		if err != nil {
-			logger.Infof("Could not get current blockId on main-chain to verify balance update %v (balanceUpdate for %v)",err, balanceUpdate.GetPublicAddress())
-			token.RPC.Close()
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
-		}
-		latestBlockId := latestHeader.Number
-		if latestBlockId.Cmp(big.NewInt(0)) <= 0 {
-			logger.Infof("Could not get current blockId on main-chain to verify balance update %v (balanceUpdate for %v)",err,balanceUpdate.GetPublicAddress())
-			token.RPC.Close()
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get current blockId on main-chain to verify balance update (%s)", err)}
-		}
-		logger.Infof("Latest Block on main-chain is %v (balanceUpdate for %v)", latestBlockId.String(), balanceUpdate.GetPublicAddress())
-		confirmationBlocks := big.NewInt(viper.GetInt64("ethereum_confirmation_blocks"))
-		if latestBlockId.Cmp(big.NewInt(0).Add(confirmationBlocks, big.NewInt(balanceUpdate.GetBlockId()))) >= 0 {
-			// check details are correct looking up the transaction transfer details
-			_transferDetails, transferBlockId, err := eth_utils.GetEthTransactionTransferDetails(eth_utils.NormalizeAddress(balanceUpdate.GetTxHash()), eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress()), token)
-			token.RPC.Close()
-			if err == nil && transferBlockId > 0 {
-				tdAddress := eth_utils.NormalizeAddress(_transferDetails.Address.String())
-				tdBalance := _transferDetails.Balance
-				buAddress := eth_utils.NormalizeAddress(balanceUpdate.GetPublicAddress())
-				buBalance, ok := new(big.Int).SetString(balanceUpdate.GetOnchainBalance(), 10)
-				if !ok {
-					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could convert balanceUpdate.GetFromOnchainBalance() to big.Int (%s)", balanceUpdate.GetOnchainBalance())}
-				}
-				buBlockId := uint64(balanceUpdate.BlockId)
+	if err != nil {
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get update balance state data %v (%s)", updateBalanceTransactionAddress, err)}
+	}
 
-				if tdAddress != buAddress ||
-					tdBalance.Cmp(buBalance)!=0 ||
-					transferBlockId != buBlockId {
-					tdBytes, _ := json.Marshal(_transferDetails)
-					logger.Infof("TransferDetails (%v) are different than submitted data (%v) - transferBlockId=%v", string(tdBytes) , balanceUpdate, transferBlockId)
-					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("TransferDetails (%v) are different than submitted data (%v)", _transferDetails, balanceUpdate)}
-				}
-
-				// it's all good we can save the data now
-
-			} else {
-				logger.Infof("Could not get TransferDetails from main-chain to verify balance update %v",err)
-				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could not get TransferDetails from main-chain to verify balance update (%s)", err)}
-			}
-
-		} else {
-			token.RPC.Close()
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Not enough confirmation blocks latestBlockId=%v submittedBlockId=%v", latestBlockId.String(), balanceUpdate.GetBlockId())}
-		}
-	} else {
+	if len(string(existingTxStateData[updateBalanceTransactionAddress])) > 0 {
 		logger.Infof("This balance update was already submitted %v", updateBalanceTransactionAddress)
 		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("TransactionHashAlreadyExists %v", updateBalanceTransactionAddress)}
 	}

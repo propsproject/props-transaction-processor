@@ -50,4 +50,5 @@ message SettlementData {
     string tx_hash = 6;
     int64 block_id = 7;
     int64 timestamp = 8;
+    string onchain_balance = 9; // Big.Int
 }
