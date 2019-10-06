@@ -1053,6 +1053,106 @@ describe('Sawtooth side chain test', () => {
         });
     });
 
+    describe('Successfully link another wallet with no props to an app user with an existing wallet', () => {
+        const app = "0x39dbb8ddeb0d0e86f17aa23d9dac4eeb69b76511";
+        const user = "user1";
+        const walletPk = "54fea0e281b1f5add50c7b87bb8ac5feb6d84d8b5d7f4a1b643e0c7ed9924114";
+        const walletAddr = "0xf731762520db9f451c7f883475fb7a27afba5516";
+        const oldWalletAddr = walletAddress;
+        let sig, userBalanceAddress, balanceAddress, walletLinkAddress, walletLinkOnChain, balanceOnChain,
+            userBalanceOnChain, oldWalletLinkAddress, oldWalletLinkOnChain,
+            balanceObj, balanceDetails, userBalanceObj, userBalanceDetails, walletApplicationUsers, oldWalletApplicationUsers,
+            balancePendingAmount, balanceTotalPendingAmount, oldWalletBalanceDetails, oldWalletBalancePendingAmount, oldWalletBalanceTotalPendingAmount,
+            userBalancePendingAmount, userBalanceTotalPendingAmount, oldWalletBalanceObj, oldWalletbalanceAddress, oldWalletbalanceOnChain;
+        before(async () => {
+            sig = await pendingProps.signMessage(`${app}_${user}`, walletAddr, walletPk);
+            await pendingProps.linkWallet(walletAddr, app, user, sig);
+            balanceUpdateIndex += 1;
+            global.timeOfStart = Math.floor(Date.now());
+            // wait a bit for it to be on chain
+            await waitUntil(() => {
+                const timePassed = Math.floor(Date.now()) - global.timeOfStart;
+                return (timePassed > waitTimeUntilOnChain)
+            }, 10000, 100);
+            userBalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress(app, user);
+            balanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", walletAddr);
+            oldWalletbalanceAddress = pendingProps.CONFIG.earnings.namespaces.balanceAddress("", walletAddress);
+            walletLinkAddress = pendingProps.CONFIG.earnings.namespaces.walletLinkAddress(walletAddr);
+            oldWalletLinkAddress = pendingProps.CONFIG.earnings.namespaces.walletLinkAddress(oldWalletAddr);
+            walletLinkOnChain = await pendingProps.queryState(walletLinkAddress, 'walletlink');
+            oldWalletLinkOnChain = await pendingProps.queryState(oldWalletLinkAddress, 'walletlink');
+            // console.log(`walletLinkOnChain=${JSON.stringify(walletLinkOnChain)}`);
+            // console.log(`oldWalletLinkOnChain=${JSON.stringify(oldWalletLinkOnChain)}`);
+
+            balanceOnChain = await pendingProps.queryState(balanceAddress, 'balance');
+            // console.log(`balanceOnChain=${JSON.stringify(balanceOnChain)}`);
+
+            oldWalletbalanceOnChain = await pendingProps.queryState(oldWalletbalanceAddress, 'balance');
+            // console.log(`oldWalletbalanceOnChain=${JSON.stringify(oldWalletbalanceOnChain)}`);
+
+            userBalanceOnChain = await pendingProps.queryState(userBalanceAddress, 'balance');
+            // console.log(`userBalanceOnChain=${JSON.stringify(userBalanceOnChain)}`);
+
+            balanceObj = balanceOnChain[0];
+            oldWalletBalanceObj = oldWalletbalanceOnChain[0];
+            balanceDetails = balanceObj.balanceDetails;
+            oldWalletBalanceDetails = oldWalletBalanceObj.balanceDetails;
+            userBalanceObj = userBalanceOnChain[0];
+            userBalanceDetails = userBalanceObj.balanceDetails;
+            walletApplicationUsers = walletLinkOnChain[0].usersList;
+            oldWalletApplicationUsers = oldWalletLinkOnChain[0].usersList;
+            balancePendingAmount = new BigNumber(balanceDetails.pending, 10);
+            balanceTotalPendingAmount = new BigNumber(balanceDetails.totalPending, 10);
+            oldWalletBalancePendingAmount = new BigNumber(oldWalletBalanceDetails.pending, 10);
+            oldWalletBalanceTotalPendingAmount = new BigNumber(oldWalletBalanceDetails.totalPending, 10);
+        });
+        it('Old Wallet link data is correct', () => {
+            expect(oldWalletApplicationUsers.length).to.be.equal(1);
+            expect(oldWalletLinkOnChain[0].address).to.be.equal(oldWalletAddr);
+            expect(oldWalletApplicationUsers[0].applicationId).to.be.equal('0x96c41cfd601a477e80fd9fbf256e767e92ac4278');
+            expect(oldWalletApplicationUsers[0].userId).to.be.equal("user2");
+        });
+        it('New Wallet link data is correct', () => {
+            expect(walletApplicationUsers.length).to.be.equal(1);
+            expect(walletLinkOnChain[0].address).to.be.equal(walletAddr);
+            expect(walletApplicationUsers[0].applicationId).to.be.equal(app);
+            expect(walletApplicationUsers[0].userId).to.be.equal(user);
+            expect(walletApplicationUsers[0].signature).to.be.equal(sig);
+        });
+        it('Wallet balance details are correct', () => {
+            expect(balancePendingAmount.div(1e18).toString()).to.be.equal('0');
+            expect(balanceTotalPendingAmount.div(1e18).toString()).to.be.equal('0');
+            expect(balanceDetails.transferable).to.be.equal('0');
+            expect(balanceObj.userId).to.be.equal(walletAddr);
+            expect(balanceObj.applicationId).to.be.equal('');
+            expect(balanceObj.linkedWallet).to.be.equal("");
+        });
+        it('Old Wallet balance details are correct', () => {
+            expect(oldWalletBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
+            expect(oldWalletBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal('0');
+            expect(oldWalletBalanceDetails.transferable).to.be.equal(balanceAtBlock2);
+            expect(oldWalletBalanceDetails.timestamp).to.be.equal(parseInt(timestamp2, 10));
+            expect(oldWalletBalanceDetails.lastEthBlockId).to.be.equal(parseInt(blockNum2, 10));
+            expect(oldWalletBalanceObj.userId).to.be.equal(oldWalletAddr);
+            expect(oldWalletBalanceObj.applicationId).to.be.equal('');
+            expect(oldWalletBalanceDetails.lastUpdateType).to.be.equal(1);
+            expect(oldWalletBalanceObj.type).to.be.equal(1);
+            expect(oldWalletBalanceObj.linkedWallet).to.be.equal("");
+        });
+        it('User balance details are correct', () => {
+
+            userBalancePendingAmount = new BigNumber(userBalanceDetails.pending, 10);
+            userBalanceTotalPendingAmount = new BigNumber(userBalanceDetails.totalPending, 10);
+
+            expect(userBalancePendingAmount.div(1e18).toString()).to.be.equal('0');
+            expect(userBalanceTotalPendingAmount.div(1e18).toString()).to.be.equal('0');
+            expect(userBalanceDetails.transferable).to.be.equal('0');
+            expect(userBalanceObj.userId).to.be.equal(user);
+            expect(userBalanceObj.applicationId).to.be.equal(app);
+            expect(userBalanceObj.linkedWallet).to.be.equal(walletAddr);
+        });
+    });
+
     // TODO - add more test for error scenarios such as replaying the same transaction, last eth block smaller than current, bad signatures, etc.
 
     after(async () => {
