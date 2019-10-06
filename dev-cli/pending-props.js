@@ -422,34 +422,15 @@ const linkWallet = async (address, applicationId, userId, signature, _timestamp 
         .activityLogAddress(calcRewardsDay(timestamp).toString(), applicationId, userId);
     const activityAddresses = [activityAddress];
 
-    // read walletLinkAddress existing data and add to inputs/outputs so it can read/write from/to it
-    const linkedApplicationUsers = await getLinkedUsersFromWalletLinkAddress(walletLinkAddress);
-    const linkedApplicationUserAddresses = [];
-    log(`linkedApplicationUsers ${JSON.stringify(linkedApplicationUsers)}`);
-    if (linkedApplicationUsers.length > 0) {
-        for (let i = 0; i < linkedApplicationUsers[0].usersList.length; ++i) {
-            linkedApplicationUserAddresses.push(
-                CONFIG
-                    .earnings
-                    .namespaces
-                    .balanceAddress(linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId)
-            )
-            const activityAddress = CONFIG
-                .earnings
-                .namespaces
-                .activityLogAddress(calcRewardsDay(timestamp).toString(), linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
-            activityAddresses.push(activityAddress);
-        }
-        log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
-    }
 
     log("walletLinkAddress = "+walletLinkAddress);
     log("balanceAddress = "+balanceAddress);
     log("walletBalanceAddress = "+walletBalanceAddress);
-    log("linkedApplicationUserAddresses = "+linkedApplicationUserAddresses.join(","));
-    log("activityAddresses = "+activityAddresses.join(","));
-    const inputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
-    const outputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
+    const walletLinkAddressPrefix = CONFIG.earnings.namespaces.prefixes.walletLink;
+    const balanceAddressPrefix = CONFIG.earnings.namespaces.prefixes.balance;
+    const activityAddressPrefix = CONFIG.earnings.namespaces.prefixes.activityLog;
+    const inputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, walletLinkAddressPrefix, balanceAddressPrefix, activityAddressPrefix];
+    const outputs = [walletLinkAddress, balanceAddress, walletBalanceAddress,walletLinkAddressPrefix, balanceAddressPrefix, activityAddressPrefix];
 
     // do the sawtooth thang ;)
     const transactionHeaderBytes = protobuf
