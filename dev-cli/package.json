@@ -15,7 +15,7 @@
     "@types/node": "^10.12.2",
     "add": "^2.0.6",
     "async-wait-until": "^1.2.4",
-    "axios": "^0.18.0",
+    "axios": "^0.18.1",
     "bignumber": "^1.1.0",
     "bignumber.js": "^7.0.1",
     "caporal": "^0.10.0",
