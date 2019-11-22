@@ -33,10 +33,11 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 				Wallet:        eth_utils.NormalizeAddress(settlementData.GetToAddress()),
 			}
 			transactionAddress, _ := TransactionAddress(transaction)
-			//b, err := proto.Marshal(&transaction)
-			//if err != nil {
-			//	return &processor.InvalidTransactionError{Msg: "could not marshal transaction proto"}
-			//}
+			b, err := proto.Marshal(&transaction)
+			if err != nil {
+				return &processor.InvalidTransactionError{Msg: "could not marshal transaction proto"}
+			}
+			logger.Infof("Not saving settlement transaction %v", len(b))
 			//stateUpdate[transactionAddress] = b
 			settlementAmount, ok := new(big.Int).SetString(transaction.GetAmount(), 10)
 			if !ok {
