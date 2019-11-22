@@ -3,7 +3,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
+	//"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/sawtooth-sdk-go/processor"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"math/big"
@@ -13,16 +13,16 @@ func (s *State) SaveTransactions(transactions ...pending_props_pb.Transaction) e
 	stateUpdate := make(map[string][]byte)
 	for _, transaction := range transactions {
 		transactionAddress, _ := TransactionAddress(transaction)
-		b, err := proto.Marshal(&transaction)
-		if err != nil {
-			return &processor.InvalidTransactionError{Msg: "could not marshal transaction proto"}
-		}
+		//b, err := proto.Marshal(&transaction)
+		//if err != nil {
+		//	return &processor.InvalidTransactionError{Msg: "could not marshal transaction proto"}
+		//}
 		// settle transaction not allowed - only via external balance updates
 		if transaction.GetType() == pending_props_pb.Method_SETTLE {
-			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Illegal operation - settlement transactions happen via external balance updates (%s)", err)}
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Illegal operation - settlement transactions happen via external balance updates (%s)", nil)}
 		}
 
-		stateUpdate[transactionAddress] = b
+		//stateUpdate[transactionAddress] = b
 		amount, ok := new(big.Int).SetString(transaction.GetAmount(), 10)
 		if !ok {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could convert transaction.GetAmount() to big.Int (%s)",transaction.GetAmount())}
