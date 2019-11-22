@@ -37,7 +37,8 @@ func (s *State) SaveSettlement(settlements ...pending_props_pb.SettlementData) e
 			if err != nil {
 				return &processor.InvalidTransactionError{Msg: "could not marshal transaction proto"}
 			}
-			stateUpdate[transactionAddress] = b
+			//stateUpdate[transactionAddress] = b
+			logger.Infof("not saving settlement transaction (%v)", len(b))
 			settlementAmount, ok := new(big.Int).SetString(transaction.GetAmount(), 10)
 			if !ok {
 				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could convert settlement transaction.GetAmount() to big.Int (%s)",transaction.GetAmount())}

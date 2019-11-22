@@ -22,7 +22,8 @@ func (s *State) SaveTransactions(transactions ...pending_props_pb.Transaction) e
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Illegal operation - settlement transactions happen via external balance updates (%s)", err)}
 		}
 
-		stateUpdate[transactionAddress] = b
+		logger.Infof("not saving transaction (%v)", len(b))
+		//stateUpdate[transactionAddress] = b
 		amount, ok := new(big.Int).SetString(transaction.GetAmount(), 10)
 		if !ok {
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Could convert transaction.GetAmount() to big.Int (%s)",transaction.GetAmount())}
