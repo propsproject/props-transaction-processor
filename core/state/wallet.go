@@ -5,7 +5,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/propsproject/props-transaction-processor/core/eth-utils"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
-	"github.com/hyperledger/sawtooth-sdk-go/processor"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"math/big"
 )
 
