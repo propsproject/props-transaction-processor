@@ -2,8 +2,8 @@ package rpc
 
 import (
 	//"fmt"
-	"github.com/hyperledger/sawtooth-sdk-go/processor"
-	"github.com/hyperledger/sawtooth-sdk-go/protobuf/processor_pb2"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
+	"github.com/propsproject/sawtooth-go-sdk/protobuf/processor_pb2"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
 	"github.com/propsproject/props-transaction-processor/core/state"
 	"strings"

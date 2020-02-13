@@ -45,7 +45,7 @@ const transactionTypes = {
 // const pk = Buffer.from("196749ed808372060eaeffe10e56de82a48829fcf52199847e1e1db4b780ced0", 'hex');
 // let pk = Buffer.from("5895c973a69c4fe662fcda172900a98bb918c0c31bf374f1b781bc34531cce3f", 'hex');
 // let pk = Buffer.from("f72ec174fdea7c0d2a1028d6a2797c20b7c3559c91ec0a0a3d64d1ba9793f76d", 'hex');
-let pk = Buffer.from("f8b378b0efd6a457ae70a1fd6c31fd3bf05391573ff172a78ea1ebdcafc6485b", 'hex');
+let pk = Buffer.from("6217d54a27b5cf639128b411205fb8600f065efe2ea47de9a450e239820b7ca9", 'hex');
 
 
 let priv = new Secp256k1PrivateKey(pk);
@@ -475,14 +475,17 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
     settlementData.setUserId(userId);
     const propsAmount = new BigNumber(amount, 10);
     const tokensAmount = propsAmount.times(1e18);
+    const balanceAmount = new BigNumber(onchainBalance, 10);
+    const balanceTokensAmount = balanceAmount.times(1e18);
     settlementData.setAmount(tokensAmount.toString());
     settlementData.setToAddress(toAddress);
     settlementData.setFromAddress(fromAddress);
     settlementData.setTxHash(txHash);
     settlementData.setBlockId(blockId);
     settlementData.setTimestamp(timestamp);
-    settlementData.setOnchainBalance(onchainBalance);
-
+    settlementData.setOnchainBalance(balanceTokensAmount.toString());
+    console.log(settlementData.toString());
+    // process.exit(1);
     //setup RPC request
     const params = new any.Any();
     params.setValue(settlementData.serializeBinary());

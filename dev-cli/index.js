@@ -97,11 +97,12 @@ cli
     .argument('<ethtransactionhash>', 'settlement transaction hash')
     .argument('<blockid>', 'block id of the settlement transaction hash')
     .argument('<timestamp>', 'timestamp of the settlement transaction hash')
+    .argument('<tobalance>', 'timestamp of the settlement transaction hash')
     .action(async (args, options, logger) => {
         logger.info(`settling props of amount ${args.amount} to application ${args.application} user ${args.user} for ${args.description}, 
-        with txHash ${args.ethtransactionhash} (blockId: ${args.blockid}, timestamp: ${args.timestamp}, to: ${args.toaddress}, from: ${args.fromaddress})`);
+        with txHash ${args.ethtransactionhash} (blockId: ${args.blockid}, timestamp: ${args.timestamp}, to: ${args.toaddress}, from: ${args.fromaddress}, toBalance: ${args.tobalance})`);
         try {
-            await pendingProps.settle(args.application, args.user, args.amount, args.toaddress, args.fromaddress, args.ethtransactionhash, args.blockid, args.timestamp);
+            await pendingProps.settle(args.application, args.user, args.amount, args.toaddress, args.fromaddress, args.ethtransactionhash, args.blockid, args.timestamp, args.tobalance);
         } catch (e) {
             logger.error(`error settling: ${e}`)
         }
