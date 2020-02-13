@@ -62,21 +62,29 @@ func (s *State) UpdateWalletLinkData(walletToUserPayload *pending_props_pb.Walle
 
 }
 
+func (s *State) SaveUnlinkEvent(walletToUserData *pending_props_pb.WalletToUser, unlinkedApplicationUser *pending_props_pb.ApplicationUser) error {
+	walletUnlinkedEvent := pending_props_pb.WalletUnlinkedEvent{
+		User:          unlinkedApplicationUser,
+		WalletToUsers: walletToUserData,
+		Message:       fmt.Sprintf("wallet address %v unlinked from application user %v", walletToUserData.GetAddress(), unlinkedApplicationUser),
+	}
+	walletUnlinkAttr := []processor.Attribute{
+		processor.Attribute{"address", walletToUserData.GetAddress()},
+		processor.Attribute{"recipient", unlinkedApplicationUser.GetUserId()},
+		processor.Attribute{"application", unlinkedApplicationUser.GetApplicationId()},
+		processor.Attribute{"event_type", pending_props_pb.EventType_WalletUnlinked.String()},
+		processor.Attribute{"signature", unlinkedApplicationUser.GetSignature()},
+	}
+	err := s.AddWalletUnlinkEvent(walletUnlinkedEvent, "pending-props:walletl", walletUnlinkAttr...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *State) SaveWalletLinkEvents(walletToUserData *pending_props_pb.WalletToUser, newApplicationUser *pending_props_pb.ApplicationUser, unlinkedApplicationUser *pending_props_pb.ApplicationUser) error {
 	if unlinkedApplicationUser != nil {
-		walletUnlinkedEvent := pending_props_pb.WalletUnlinkedEvent{
-			User:          unlinkedApplicationUser,
-			WalletToUsers: walletToUserData,
-			Message:       fmt.Sprintf("wallet address %v unlinked from application user %v", walletToUserData.GetAddress(), unlinkedApplicationUser),
-		}
-		walletUnlinkAttr := []processor.Attribute{
-			processor.Attribute{"address", walletToUserData.GetAddress()},
-			processor.Attribute{"recipient", unlinkedApplicationUser.GetUserId()},
-			processor.Attribute{"application", unlinkedApplicationUser.GetApplicationId()},
-			processor.Attribute{"event_type", pending_props_pb.EventType_WalletUnlinked.String()},
-			processor.Attribute{"signature", unlinkedApplicationUser.GetSignature()},
-		}
-		err := s.AddWalletUnlinkEvent(walletUnlinkedEvent, "pending-props:walletl", walletUnlinkAttr...)
+		err := s.SaveUnlinkEvent(walletToUserData, unlinkedApplicationUser)
 		if err != nil {
 			return err
 		}
@@ -188,6 +196,46 @@ func (s *State) CalculateTotalPending(linkedWalletApplicationUsers []*pending_pr
 	return totalPending, nil
 }
 
+func (s *State) unlinkUserFromWallet(balanceUserAddress string, balanceUser *pending_props_pb.Balance, updates map[string][]byte) error {
+	newLinkedApplicationUsers := make([]*pending_props_pb.ApplicationUser, 0)
+
+	oldWalletLinkAddress, _ := WalletLinkAddress(balanceUser.GetLinkedWallet())
+	state, err := s.context.GetState([]string{oldWalletLinkAddress})
+	if err != nil {
+		return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could get user old wallet link state data %v (%s)",oldWalletLinkAddress, err)}
+	}
+	if len(string(state[oldWalletLinkAddress])) > 0{
+		var walletLinkData pending_props_pb.WalletToUser
+		for _, value := range state {
+
+			err := proto.Unmarshal(value, &walletLinkData)
+			if err != nil {
+				return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal wallet link proto data (%s)", err)}
+			}
+		}
+		currentLinkedApplicationUsers := walletLinkData.GetUsers()
+		var unlinkedAppUser *pending_props_pb.ApplicationUser
+		for _, existingLinkedApplicationUser := range currentLinkedApplicationUsers {
+			if existingLinkedApplicationUser.GetApplicationId() != balanceUser.GetApplicationId() {
+				newLinkedApplicationUsers = append(newLinkedApplicationUsers, existingLinkedApplicationUser)
+			} else {
+				unlinkedAppUser = existingLinkedApplicationUser
+			}
+		}
+		walletLinkData.Users = newLinkedApplicationUsers
+		walletToUserBytes, err := proto.Marshal(&walletLinkData)
+		if err != nil {
+			return &processor.InvalidTransactionError{Msg: "could not marshal wallet link data to proto"}
+		}
+		updates[oldWalletLinkAddress] = walletToUserBytes
+		err1 := s.SaveUnlinkEvent(&walletLinkData, unlinkedAppUser)
+		if err1 != nil {
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could save unlink event user old wallet balance state data %v (%s)",unlinkedAppUser.String(), err1)}
+		}
+	}
+	return nil
+}
+
 func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) error {
 	stateUpdate := make(map[string][]byte)
 	for _, walletToUser := range walletToUsers {
@@ -196,6 +244,28 @@ func (s *State) SaveWalletLink(walletToUsers ...pending_props_pb.WalletToUser) e
 		if !eth_utils.VerifySig(walletToUser.GetAddress(), walletToUser.GetUsers()[0].GetSignature(), []byte(fmt.Sprintf("%v_%v", walletToUser.GetUsers()[0].GetApplicationId(), walletToUser.GetUsers()[0].GetUserId()))) {
 			logger.Infof(fmt.Sprintf("Wallet verification %v, %v, %v, %v", walletToUser.GetAddress(), walletToUser.GetUsers()[0].GetSignature(), walletToUser.GetUsers()[0].GetApplicationId(), walletToUser.GetUsers()[0].GetUserId()))
 			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("Signature verification fail %v, %v, %v", walletToUser.GetAddress(), walletToUser.GetUsers()[0].GetSignature(), []byte(fmt.Sprintf("%v_%v", walletToUser.GetUsers()[0].GetApplicationId(), walletToUser.GetUsers()[0].GetUserId())))}
+		}
+		//// check if user to be linked is
+		balanceAddressUser, _ := BalanceAddressByAppUser( walletToUser.GetUsers()[0].GetApplicationId(), walletToUser.GetUsers()[0].GetUserId())
+		state, err := s.context.GetState([]string{balanceAddressUser})
+		if err != nil {
+			return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could get linked user state data %v (%s)", walletToUser.String(), err)}
+		}
+		if len(string(state[balanceAddressUser])) > 0{
+			var balanceUser pending_props_pb.Balance
+			for _, value := range state {
+
+				err := proto.Unmarshal(value, &balanceUser)
+				if err != nil {
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not unmarshal user balance proto data (%s)", err)}
+				}
+			}
+			if len(balanceUser.GetLinkedWallet()) > 0 && balanceUser.GetLinkedWallet() != walletToUser.GetAddress() { // user is linked to a different wallet ==> unlink it
+				err := s.unlinkUserFromWallet(balanceAddressUser, &balanceUser, stateUpdate)
+				if err != nil {
+					return &processor.InvalidTransactionError{Msg: fmt.Sprintf("could not get unlink wallet balance (%s)", err)}
+				}
+			}
 		}
 
 		unlinkedApplicationUser, linkedApplicationUsers, err := s.UpdateWalletLinkData(&walletToUser, stateUpdate)

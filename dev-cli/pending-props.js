@@ -43,7 +43,10 @@ const transactionTypes = {
 }
 // hard coded example private key
 // const pk = Buffer.from("196749ed808372060eaeffe10e56de82a48829fcf52199847e1e1db4b780ced0", 'hex');
-let pk = Buffer.from("5895c973a69c4fe662fcda172900a98bb918c0c31bf374f1b781bc34531cce3f", 'hex');
+// let pk = Buffer.from("5895c973a69c4fe662fcda172900a98bb918c0c31bf374f1b781bc34531cce3f", 'hex');
+// let pk = Buffer.from("f72ec174fdea7c0d2a1028d6a2797c20b7c3559c91ec0a0a3d64d1ba9793f76d", 'hex');
+let pk = Buffer.from("6217d54a27b5cf639128b411205fb8600f065efe2ea47de9a450e239820b7ca9", 'hex');
+
 
 let priv = new Secp256k1PrivateKey(pk);
 let signer = new CryptoFactory(context).newSigner(priv);
@@ -422,34 +425,15 @@ const linkWallet = async (address, applicationId, userId, signature, _timestamp 
         .activityLogAddress(calcRewardsDay(timestamp).toString(), applicationId, userId);
     const activityAddresses = [activityAddress];
 
-    // read walletLinkAddress existing data and add to inputs/outputs so it can read/write from/to it
-    const linkedApplicationUsers = await getLinkedUsersFromWalletLinkAddress(walletLinkAddress);
-    const linkedApplicationUserAddresses = [];
-    log(`linkedApplicationUsers ${JSON.stringify(linkedApplicationUsers)}`);
-    if (linkedApplicationUsers.length > 0) {
-        for (let i = 0; i < linkedApplicationUsers[0].usersList.length; ++i) {
-            linkedApplicationUserAddresses.push(
-                CONFIG
-                    .earnings
-                    .namespaces
-                    .balanceAddress(linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId)
-            )
-            const activityAddress = CONFIG
-                .earnings
-                .namespaces
-                .activityLogAddress(calcRewardsDay(timestamp).toString(), linkedApplicationUsers[0].usersList[i].applicationId, linkedApplicationUsers[0].usersList[i].userId);
-            activityAddresses.push(activityAddress);
-        }
-        log(`linkedApplicationUsersAddresses ${JSON.stringify(linkedApplicationUserAddresses)}`);
-    }
 
     log("walletLinkAddress = "+walletLinkAddress);
     log("balanceAddress = "+balanceAddress);
     log("walletBalanceAddress = "+walletBalanceAddress);
-    log("linkedApplicationUserAddresses = "+linkedApplicationUserAddresses.join(","));
-    log("activityAddresses = "+activityAddresses.join(","));
-    const inputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
-    const outputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, ...linkedApplicationUserAddresses, ...activityAddresses];
+    const walletLinkAddressPrefix = CONFIG.earnings.namespaces.prefixes.walletLink;
+    const balanceAddressPrefix = CONFIG.earnings.namespaces.prefixes.balance;
+    const activityAddressPrefix = CONFIG.earnings.namespaces.prefixes.activityLog;
+    const inputs = [walletLinkAddress, balanceAddress, walletBalanceAddress, walletLinkAddressPrefix, balanceAddressPrefix, activityAddressPrefix];
+    const outputs = [walletLinkAddress, balanceAddress, walletBalanceAddress,walletLinkAddressPrefix, balanceAddressPrefix, activityAddressPrefix];
 
     // do the sawtooth thang ;)
     const transactionHeaderBytes = protobuf
@@ -491,14 +475,17 @@ const settle = async (applicationId, userId, amount, toAddress, fromAddress, txH
     settlementData.setUserId(userId);
     const propsAmount = new BigNumber(amount, 10);
     const tokensAmount = propsAmount.times(1e18);
+    const balanceAmount = new BigNumber(onchainBalance, 10);
+    const balanceTokensAmount = balanceAmount.times(1e18);
     settlementData.setAmount(tokensAmount.toString());
     settlementData.setToAddress(toAddress);
     settlementData.setFromAddress(fromAddress);
     settlementData.setTxHash(txHash);
     settlementData.setBlockId(blockId);
     settlementData.setTimestamp(timestamp);
-    settlementData.setOnchainBalance(onchainBalance);
-
+    settlementData.setOnchainBalance(balanceTokensAmount.toString());
+    console.log(settlementData.toString());
+    // process.exit(1);
     //setup RPC request
     const params = new any.Any();
     params.setValue(settlementData.serializeBinary());
