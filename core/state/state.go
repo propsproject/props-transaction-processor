@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/hyperledger/sawtooth-sdk-go/processor"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

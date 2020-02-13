@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/hyperledger/sawtooth-sdk-go/processor"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
 	"syscall"
 )
 

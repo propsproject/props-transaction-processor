@@ -3,7 +3,7 @@ package state
 import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/propsproject/props-transaction-processor/core/proto/pending_props_pb"
-	"github.com/hyperledger/sawtooth-sdk-go/processor"
+	"github.com/propsproject/sawtooth-go-sdk/processor"
 )
 
 func (s *State) AddEvent(event pending_props_pb.TransactionEvent, eventType string, attributes ...processor.Attribute) error {
