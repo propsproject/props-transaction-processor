@@ -29,7 +29,7 @@
     "ethereumjs-wallet": "^0.6.3",
     "figlet": "^1.2.1",
     "find-in-files": "^0.5.0",
-    "google-closure-library": "^20180405.0.0",
+    "google-closure-library": "^20190301.0.0",
     "google-protobuf": "^3.5.0",
     "moment": "^2.22.2",
     "opn": "^5.4.0",
