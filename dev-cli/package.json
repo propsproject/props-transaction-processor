@@ -31,7 +31,7 @@
     "find-in-files": "^0.5.0",
     "google-closure-library": "^20180405.0.0",
     "google-protobuf": "^3.5.0",
-    "moment": "^2.22.2",
+    "moment": "^2.29.2",
     "opn": "^5.4.0",
     "prettyjson": "^1.2.1",
     "request": "^2.88.0",
